@@ -3,7 +3,7 @@
 define('DB_HOST', 'localhost:3306');
 define('DB_USER', 'auroraho_longdev');
 define('DB_PASS', '@longdev3824');
-define('DB_NAME', 'wcb');
+define('DB_NAME', 'auroraho_wcb');
 // Base path cho subfolder deployment
 define('BASE_PATH', '/wcb');
 
