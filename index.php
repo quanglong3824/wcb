@@ -50,27 +50,6 @@
                 <button type="submit" class="btn-primary">Upload Welcome Board</button>
             </form>
         </section>
-
-        <!-- Phần Admin -->
-        <section id="admin" class="panel">
-            <h2>Admin - Quản lý Welcome Board</h2>
-            
-            <?php if (isset($_GET['admin_success'])): ?>
-                <div class="alert success">Đã cập nhật trạng thái hiển thị!</div>
-            <?php endif; ?>
-            
-            <div class="admin-controls">
-                <h3>Danh sách Welcome Board</h3>
-                <?php include 'admin_list.php'; ?>
-            </div>
-            
-            <div class="current-status">
-                <h3>Trạng thái hiện tại</h3>
-                <?php include 'current_status.php'; ?>
-            </div>
-        </section>
     </div>
-
-    <script src="script.js"></script>
 </body>
 </html>
