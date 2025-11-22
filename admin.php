@@ -194,7 +194,7 @@
         <!-- Upload Board mới -->
         <section class="panel">
             <h2>📤 Upload Welcome Board mới</h2>
-            <form action="upload_v2.php" method="POST" enctype="multipart/form-data" class="upload-form">
+            <form action="upload.php" method="POST" enctype="multipart/form-data" class="upload-form">
                 <div class="form-group">
                     <label>Ngày sự kiện</label>
                     <input type="date" name="event_date" required>
