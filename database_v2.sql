@@ -1,5 +1,5 @@
 -- Database schema V2 - Multi Department/TV System
-CREATE DATABASE IF NOT EXISTS wcb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 
 USE wcb;
 
@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS board_assignments (
 
 -- Insert departments
 INSERT INTO departments (code, name, description) VALUES
+('BASEMENT', 'Tầng hầm', 'Tầng hầm - 1 TV (tối đa 3 WCB)'),
 ('FO', 'Front Office', 'Bộ phận lễ tân - 2 TV'),
 ('RESTAURANT', 'Nhà hàng', 'Bộ phận nhà hàng - 1 TV'),
 ('CHRYSAN', 'Chrysan', 'Phòng Chrysan - 1 TV'),
@@ -74,17 +75,19 @@ INSERT INTO departments (code, name, description) VALUES
 
 -- Insert TV screens
 INSERT INTO tv_screens (department_id, code, name, location) VALUES
--- FO: 2 TVs
-(1, 'FO_TV1', 'FO - TV 1', 'Lễ tân chính'),
-(1, 'FO_TV2', 'FO - TV 2', 'Lễ tân phụ'),
--- Restaurant: 1 TV
-(2, 'RESTAURANT_TV1', 'Nhà hàng - TV 1', 'Khu vực nhà hàng'),
--- Chrysan: 1 TV
-(3, 'CHRYSAN_TV1', 'Chrysan - TV 1', 'Phòng Chrysan'),
--- Lotus: 1 TV
-(4, 'LOTUS_TV1', 'Lotus - TV 1', 'Phòng Lotus'),
--- Jasmin: 1 TV
-(5, 'JASMIN_TV1', 'Jasmin - TV 1', 'Phòng Jasmin');
+-- Basement: 1 TV (max 3 WCB)
+(1, 'BASEMENT_TV1', 'Tầng hầm - TV 1', 'Tầng hầm'),
+-- FO: 2 TVs (max 1 WCB each)
+(2, 'FO_TV1', 'FO - TV 1', 'Lễ tân chính'),
+(2, 'FO_TV2', 'FO - TV 2', 'Lễ tân phụ'),
+-- Restaurant: 1 TV (max 1 WCB)
+(3, 'RESTAURANT_TV1', 'Nhà hàng - TV 1', 'Khu vực nhà hàng'),
+-- Chrysan: 1 TV (max 1 WCB)
+(4, 'CHRYSAN_TV1', 'Chrysan - TV 1', 'Phòng Chrysan'),
+-- Lotus: 1 TV (max 1 WCB)
+(5, 'LOTUS_TV1', 'Lotus - TV 1', 'Phòng Lotus'),
+-- Jasmin: 1 TV (max 1 WCB)
+(6, 'JASMIN_TV1', 'Jasmin - TV 1', 'Phòng Jasmin');
 
 -- View để xem thống kê
 CREATE OR REPLACE VIEW stats_overview AS

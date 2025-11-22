@@ -155,6 +155,24 @@ try {
                 break;
             }
             
+            // Kiểm tra TV code để xác định max WCB
+            $stmt = $conn->prepare("SELECT code FROM tv_screens WHERE id = ?");
+            $stmt->bind_param("i", $tv_id);
+            $stmt->execute();
+            $tv_result = $stmt->get_result();
+            $tv = $tv_result->fetch_assoc();
+            
+            $current_count = getTVBoardCount($tv_id);
+            $max_wcb = ($tv && $tv['code'] === 'BASEMENT_TV1') ? 3 : 1;
+            
+            if ($current_count >= $max_wcb) {
+                echo json_encode([
+                    'success' => false, 
+                    'message' => "TV đã đủ $max_wcb WCB, không thể assign thêm"
+                ], JSON_UNESCAPED_UNICODE);
+                break;
+            }
+            
             $result = assignBoardToTV($board_id, $tv_id);
             echo json_encode($result, JSON_UNESCAPED_UNICODE);
             break;

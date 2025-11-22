@@ -69,6 +69,7 @@ function getTVsByDepartment($department_id = null) {
             // Add board count for each TV
             $row['board_count'] = getTVBoardCount($row['id']);
             $row['can_assign'] = canAssignToTV($row['id']);
+            $row['max_wcb'] = ($row['code'] === 'BASEMENT_TV1') ? 3 : 1;
             $tvs[] = $row;
         }
     }
@@ -88,10 +89,29 @@ function getTVBoardCount($tv_id) {
     return (int)$row['count'];
 }
 
-// Kiểm tra TV có thể nhận thêm WCB không (max 3)
+// Kiểm tra TV có thể nhận thêm WCB không
 function canAssignToTV($tv_id) {
+    $conn = getDBConnection();
+    $stmt = $conn->prepare("SELECT code FROM tv_screens WHERE id = ?");
+    $stmt->bind_param("i", $tv_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $tv = $result->fetch_assoc();
+    
     $count = getTVBoardCount($tv_id);
-    return $count < 3;
+    
+    // TV Tầng hầm có thể có tối đa 3 WCB
+    if ($tv && $tv['code'] === 'BASEMENT_TV1') {
+        return $count < 3;
+    }
+    
+    // Các TV khác chỉ có thể có 1 WCB
+    return $count < 1;
+}
+
+// Lấy max WCB cho TV
+function getMaxWCBForTV($tv_code) {
+    return $tv_code === 'BASEMENT_TV1' ? 3 : 1;
 }
 
 // Lấy boards được assign cho TV
