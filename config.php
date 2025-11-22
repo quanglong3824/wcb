@@ -1,10 +1,9 @@
 <?php
 // Cấu hình database - Multi TV System
-define('DB_HOST', 'localhost');
-define('DB_USER', 'your_username');
-define('DB_PASS', 'your_password');
-define('DB_NAME', 'wcb_system');
-
+define('DB_HOST', 'localhost:3306');
+define('DB_USER', 'auroraho_longdev');
+define('DB_PASS', '@longdev3824');
+define('DB_NAME', 'wcb');
 // Base path cho subfolder deployment
 define('BASE_PATH', '/wcb');
 
