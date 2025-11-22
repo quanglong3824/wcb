@@ -507,11 +507,12 @@
             <div id="tvList" class="loading">Đang tải...</div>
         </section>
 
-        <!-- Boards Management -->
+        <!-- Active TVs Management -->
         <section class="panel">
-            <h2>📋 Quản lý Welcome Boards</h2>
-            <div id="boardsList" class="loading">Đang tải...</div>
+            <h2>� Quản lý TV đang hoạt động</h2>
+            <div id="activeTVList" class="loading">Đang tải...</div>
         </section>
+
     </div>
 
     <script>
@@ -520,6 +521,8 @@
         let boards = [];
         let wcbCount = 0;
         const MAX_WCB = 5;
+
+        let activeAssignments = [];
 
         // Load data
         async function loadData() {
@@ -539,13 +542,21 @@
                 const boardData = await boardResponse.json();
                 if (boardData.success) boards = boardData.boards;
 
+                // Load active assignments
+                const assignResponse = await fetch('api.php?action=get_all_active_assignments');
+                const assignData = await assignResponse.json();
+                if (assignData.success) activeAssignments = assignData.assignments;
+
                 renderTVList();
-                renderBoardsList();
-                loadBoardAssignments();
+                // renderBoardsList(); // Removed
+                // loadBoardAssignments(); // Removed
                 
                 // Render Quick Assignment checklists
                 renderWCBChecklist();
                 renderTVChecklist();
+                
+                // Render Active TV List
+                renderActiveTVList();
                 
                 // Add first WCB upload item
                 if (wcbCount === 0) addWCBUploadItem();
@@ -553,6 +564,125 @@
                 console.error('Load data error:', error);
             }
         }
+
+        // Render Active TV List (TV-centric view)
+        function renderActiveTVList() {
+            const container = document.getElementById('activeTVList');
+            if (tvs.length === 0) {
+                container.innerHTML = '<p style="color: #999;">Không có TV nào đang hoạt động.</p>';
+                return;
+            }
+
+            let html = '';
+            
+            // Group TVs by department
+            departments.forEach(dept => {
+                const deptTVs = tvs.filter(tv => tv.department_id == dept.id);
+                if (deptTVs.length === 0) return;
+
+                html += `<div style="margin-bottom: 25px;">`;
+                html += `<h3 style="color: #667eea; border-bottom: 2px solid #e8eef5; padding-bottom: 8px; margin-bottom: 15px;">${dept.name}</h3>`;
+                html += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px;">`;
+
+                deptTVs.forEach(tv => {
+                    // Find assignments for this TV
+                    const tvAssignments = activeAssignments.filter(a => a.tv_id == tv.id);
+                    
+                    html += `
+                        <div style="background: white; border: 1px solid #e1e8ed; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <strong style="font-size: 1.1rem; color: #333;">${tv.name}</strong>
+                                ${tvAssignments.length > 0 ? 
+                                    `<button onclick="turnOffAllWCB(${tv.id})" style="background: white; border: 1px solid #333; color: #333; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s;">Tắt toàn bộ</button>` 
+                                    : ''}
+                            </div>
+                            
+                            <div style="min-height: 50px;">
+                                ${tvAssignments.length === 0 ? 
+                                    '<p style="color: #999; font-style: italic;">Đang không chiếu gì</p>' : 
+                                    tvAssignments.map(a => `
+                                        <div style="display: flex; align-items: center; justify-content: space-between; background: #f8f9fa; padding: 8px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #eee;">
+                                            <div style="display: flex; align-items: center; overflow: hidden;">
+                                                <img src="${a.filepath}" style="width: 40px; height: 25px; object-fit: cover; border-radius: 3px; margin-right: 10px;">
+                                                <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                    <div style="font-weight: 600; font-size: 0.9rem;">${a.event_title}</div>
+                                                    <div style="font-size: 0.75rem; color: #666;">${a.event_date}</div>
+                                                </div>
+                                            </div>
+                                            <button onclick="turnOffWCB(${tv.id}, ${a.board_id})" style="background: white; border: 1px solid #333; color: #333; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-left: 8px; white-space: nowrap;">Tắt</button>
+                                        </div>
+                                    `).join('')
+                                }
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `</div></div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Turn off specific WCB on a TV
+        async function turnOffWCB(tvId, boardId) {
+            if (!confirm('Tắt WCB này trên TV?')) return;
+            
+            const formData = new FormData();
+            formData.append('board_id', boardId);
+            formData.append('tv_id', tvId);
+            
+            try {
+                const response = await fetch('api.php?action=unassign_from_tv', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.success) {
+                    loadData(); // Reload to update UI
+                } else {
+                    alert('❌ Lỗi: ' + (data.message || 'Không thể tắt'));
+                }
+            } catch (error) {
+                alert('❌ Lỗi kết nối');
+            }
+        }
+
+        // Turn off all WCBs on a TV
+        async function turnOffAllWCB(tvId) {
+            if (!confirm('Tắt TOÀN BỘ WCB trên TV này?')) return;
+            
+            // Find all assignments for this TV
+            const tvAssignments = activeAssignments.filter(a => a.tv_id == tvId);
+            if (tvAssignments.length === 0) return;
+            
+            let successCount = 0;
+            
+            // Loop through and unassign each
+            for (const a of tvAssignments) {
+                const formData = new FormData();
+                formData.append('board_id', a.board_id);
+                formData.append('tv_id', tvId);
+                
+                try {
+                    const response = await fetch('api.php?action=unassign_from_tv', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+                    if (data.success) successCount++;
+                } catch (error) {
+                    console.error('Error unassigning:', error);
+                }
+            }
+            
+            if (successCount > 0) {
+                loadData();
+            } else {
+                alert('❌ Có lỗi khi tắt WCB');
+            }
+        }
+
 
         // Add WCB upload item
         function addWCBUploadItem() {

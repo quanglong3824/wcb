@@ -231,6 +231,15 @@ try {
             echo json_encode(['success' => $success], JSON_UNESCAPED_UNICODE);
             break;
             
+        case 'get_all_active_assignments':
+            $assignments = getAllActiveAssignments();
+            echo json_encode([
+                'success' => true,
+                'assignments' => $assignments
+            ], JSON_UNESCAPED_UNICODE);
+            break;
+
+            
         default:
             echo json_encode(['success' => false, 'message' => 'Invalid action'], JSON_UNESCAPED_UNICODE);
     }

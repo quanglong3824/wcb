@@ -226,4 +226,34 @@ function unassignBoardFromTV($board_id, $tv_id) {
     $stmt->bind_param("si", $board_id, $tv_id);
     return $stmt->execute();
 }
+
+// Lấy tất cả assignments đang active
+function getAllActiveAssignments() {
+    $conn = getDBConnection();
+    $sql = "SELECT 
+                ba.id as assignment_id,
+                ba.tv_id,
+                tv.name as tv_name,
+                tv.department_id,
+                d.name as department_name,
+                ba.board_id,
+                wb.event_title,
+                wb.event_date,
+                wb.filepath
+            FROM board_assignments ba
+            JOIN tv_screens tv ON ba.tv_id = tv.id
+            JOIN departments d ON tv.department_id = d.id
+            JOIN welcome_boards wb ON ba.board_id = wb.id
+            WHERE ba.status = 'active' AND tv.status = 'active'
+            ORDER BY tv.department_id, tv.id, ba.created_at DESC";
+            
+    $result = $conn->query($sql);
+    $assignments = [];
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $assignments[] = $row;
+        }
+    }
+    return $assignments;
+}
 ?>
