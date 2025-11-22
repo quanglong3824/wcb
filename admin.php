@@ -706,9 +706,9 @@
             }
             html += '</div>';
 
-            // Add assignment controls
+            // Add assignment controls - Department level
             html += '<div class="assignment-controls">';
-            html += '<strong style="width: 100%; margin-bottom: 10px; display: block;">Quản lý hiển thị:</strong>';
+            html += '<strong style="width: 100%; margin-bottom: 10px; display: block;">📺 Assign theo bộ phận:</strong>';
             
             departments.forEach(dept => {
                 html += `
@@ -720,6 +720,49 @@
                     </button>
                 `;
             });
+            html += '</div>';
+
+            // Add individual TV selection
+            html += '<div class="assignment-controls" style="margin-top: 20px;">';
+            html += '<strong style="width: 100%; margin-bottom: 10px; display: block;">🎯 Assign từng TV riêng lẻ:</strong>';
+            html += `<div id="tv-selector-${boardId}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 15px;">`;
+            
+            // Group TVs by department
+            departments.forEach(dept => {
+                const deptTVs = tvs.filter(tv => tv.department_id == dept.id);
+                if (deptTVs.length > 0) {
+                    html += `<div style="grid-column: 1 / -1; font-weight: 600; color: #667eea; margin-top: 10px;">${dept.name}</div>`;
+                    deptTVs.forEach(tv => {
+                        const isAssigned = assignments.some(a => a.tv_id == tv.id);
+                        const isFull = tv.board_count >= 3 && !isAssigned;
+                        html += `
+                            <label style="display: flex; align-items: center; padding: 8px; background: ${isAssigned ? '#d4edda' : (isFull ? '#fff3cd' : '#f8f9fb')}; border-radius: 6px; cursor: ${isFull ? 'not-allowed' : 'pointer'}; opacity: ${isFull ? '0.6' : '1'};">
+                                <input type="checkbox" 
+                                       class="tv-checkbox-${boardId}" 
+                                       value="${tv.id}" 
+                                       ${isAssigned ? 'checked' : ''} 
+                                       ${isFull ? 'disabled' : ''}
+                                       style="margin-right: 8px;">
+                                <span style="font-size: 0.9rem;">
+                                    ${tv.name} 
+                                    <small style="color: #666;">(${tv.board_count}/3)</small>
+                                    ${isFull ? ' ⚠️' : ''}
+                                </span>
+                            </label>
+                        `;
+                    });
+                }
+            });
+            
+            html += '</div>';
+            html += `
+                <button class="btn-assign" onclick="assignSelectedTVs('${boardId}')" style="margin-right: 10px;">
+                    ✓ Assign các TV đã chọn
+                </button>
+                <button class="btn-unassign" onclick="unassignSelectedTVs('${boardId}')">
+                    ✗ Gỡ các TV đã chọn
+                </button>
+            `;
             html += '</div>';
 
             container.innerHTML = html;
@@ -772,6 +815,81 @@
                 }
             } catch (error) {
                 alert('❌ Lỗi kết nối');
+            }
+        }
+
+        // Assign selected TVs
+        async function assignSelectedTVs(boardId) {
+            const checkboxes = document.querySelectorAll(`.tv-checkbox-${boardId}:checked:not(:disabled)`);
+            if (checkboxes.length === 0) {
+                alert('⚠️ Vui lòng chọn ít nhất một TV');
+                return;
+            }
+
+            const tvIds = Array.from(checkboxes).map(cb => cb.value);
+            if (!confirm(`Assign board này cho ${tvIds.length} TV đã chọn?`)) return;
+
+            const formData = new FormData();
+            formData.append('board_ids', JSON.stringify([boardId]));
+            formData.append('tv_ids', JSON.stringify(tvIds));
+
+            try {
+                const response = await fetch('api.php?action=batch_assign', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert(`✅ Đã assign cho ${data.success_count} TV`);
+                    loadData();
+                } else {
+                    alert('❌ Lỗi: ' + (data.message || 'Không thể assign'));
+                }
+            } catch (error) {
+                alert('❌ Lỗi kết nối');
+            }
+        }
+
+        // Unassign selected TVs
+        async function unassignSelectedTVs(boardId) {
+            const checkboxes = document.querySelectorAll(`.tv-checkbox-${boardId}:checked`);
+            if (checkboxes.length === 0) {
+                alert('⚠️ Vui lòng chọn ít nhất một TV');
+                return;
+            }
+
+            const tvIds = Array.from(checkboxes).map(cb => cb.value);
+            if (!confirm(`Gỡ board này khỏi ${tvIds.length} TV đã chọn?`)) return;
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (const tvId of tvIds) {
+                const formData = new FormData();
+                formData.append('board_id', boardId);
+                formData.append('tv_id', tvId);
+
+                try {
+                    const response = await fetch('api.php?action=unassign_from_tv', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                    }
+                } catch (error) {
+                    errorCount++;
+                }
+            }
+
+            if (successCount > 0) {
+                alert(`✅ Đã gỡ khỏi ${successCount} TV`);
+                loadData();
+            } else {
+                alert('❌ Không thể gỡ TV nào');
             }
         }
 
