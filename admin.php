@@ -729,82 +729,47 @@
             }
         }
 
-        // Render board assignment
+        // Render board assignment (simplified - chỉ hiển thị TV nào đang hoạt động)
         function renderBoardAssignment(boardId, assignments) {
             const container = document.getElementById(`assignment-${boardId}`);
             if (!container) return;
 
-            let html = '<div>';
+            let html = '<div style="padding: 15px; background: var(--light); border-radius: 8px;">';
+            html += '<strong style="color: var(--dark); font-size: 1rem;">📺 TV đang chiếu WCB này:</strong>';
+            html += '<div style="margin-top: 12px;">';
+            
             if (assignments.length === 0) {
-                html += '<p style="color: #999;">Chưa assign cho TV nào</p>';
+                html += '<p style="color: #999; margin: 0;">Chưa có TV nào đang chiếu WCB này</p>';
             } else {
+                // Group by department
+                const byDept = {};
                 assignments.forEach(a => {
-                    html += `<span class="assignment-tag">${a.department_name} - ${a.tv_name}</span>`;
+                    if (!byDept[a.department_name]) {
+                        byDept[a.department_name] = [];
+                    }
+                    byDept[a.department_name].push(a);
                 });
-            }
-            html += '</div>';
 
-            // Add assignment controls - Department level
-            html += '<div class="assignment-controls">';
-            html += '<strong style="width: 100%; margin-bottom: 10px; display: block;">📺 Assign theo bộ phận:</strong>';
-            
-            departments.forEach(dept => {
-                html += `
-                    <button class="btn-assign" onclick="assignToDepartment('${boardId}', ${dept.id}, '${dept.name}')">
-                        ➕ ${dept.name}
-                    </button>
-                    <button class="btn-unassign" onclick="unassignFromDepartment('${boardId}', ${dept.id}, '${dept.name}')">
-                        ➖ ${dept.name}
-                    </button>
-                `;
-            });
-            html += '</div>';
-
-            // Add individual TV selection
-            html += '<div class="assignment-controls" style="margin-top: 20px;">';
-            html += '<strong style="width: 100%; margin-bottom: 10px; display: block;">🎯 Assign từng TV riêng lẻ:</strong>';
-            html += `<div id="tv-selector-${boardId}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 15px;">`;
-            
-            // Group TVs by department
-            departments.forEach(dept => {
-                const deptTVs = tvs.filter(tv => tv.department_id == dept.id);
-                if (deptTVs.length > 0) {
-                    html += `<div style="grid-column: 1 / -1; font-weight: 600; color: #667eea; margin-top: 10px;">${dept.name}</div>`;
-                    deptTVs.forEach(tv => {
-                        const isAssigned = assignments.some(a => a.tv_id == tv.id);
-                        const isFull = tv.board_count >= 3 && !isAssigned;
+                Object.keys(byDept).forEach(deptName => {
+                    html += `<div style="margin-bottom: 12px;">`;
+                    html += `<div style="font-weight: 600; color: #667eea; margin-bottom: 6px;">${deptName}</div>`;
+                    byDept[deptName].forEach(a => {
                         html += `
-                            <label style="display: flex; align-items: center; padding: 8px; background: ${isAssigned ? '#d4edda' : (isFull ? '#fff3cd' : '#f8f9fb')}; border-radius: 6px; cursor: ${isFull ? 'not-allowed' : 'pointer'}; opacity: ${isFull ? '0.6' : '1'};">
-                                <input type="checkbox" 
-                                       class="tv-checkbox-${boardId}" 
-                                       value="${tv.id}" 
-                                       ${isAssigned ? 'checked' : ''} 
-                                       ${isFull ? 'disabled' : ''}
-                                       style="margin-right: 8px;">
-                                <span style="font-size: 0.9rem;">
-                                    ${tv.name} 
-                                    <small style="color: #666;">(${tv.board_count}/3)</small>
-                                    ${isFull ? ' ⚠️' : ''}
-                                </span>
-                            </label>
+                            <div style="display: inline-block; background: #d4edda; color: #155724; padding: 6px 12px; border-radius: 6px; margin: 4px; font-size: 0.9rem;">
+                                ✓ ${a.tv_name}
+                            </div>
                         `;
                     });
-                }
-            });
+                    html += `</div>`;
+                });
+            }
             
             html += '</div>';
-            html += `
-                <button class="btn-assign" onclick="assignSelectedTVs('${boardId}')" style="margin-right: 10px;">
-                    ✓ Assign các TV đã chọn
-                </button>
-                <button class="btn-unassign" onclick="unassignSelectedTVs('${boardId}')">
-                    ✗ Gỡ các TV đã chọn
-                </button>
-            `;
             html += '</div>';
 
             container.innerHTML = html;
         }
+
 
         // Assign to department
         async function assignToDepartment(boardId, deptId, deptName) {
