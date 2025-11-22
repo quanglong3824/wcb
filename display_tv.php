@@ -27,6 +27,7 @@
             align-items: center;
             justify-content: center;
             position: relative;
+            background: #000;
         }
         
         .welcome-board {
@@ -38,35 +39,56 @@
         
         .welcome-board.active {
             display: block;
-            animation: fadeIn 0.5s ease-in;
+            animation: fadeIn 0.6s ease-out;
         }
         
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from { 
+                opacity: 0;
+                transform: scale(0.98);
+            }
+            to { 
+                opacity: 1;
+                transform: scale(1);
+            }
         }
         
         .no-board {
-            color: #ffffff;
+            color: #ecf0f1;
             text-align: center;
-            font-size: 1.5rem;
-            padding: 40px;
+            font-size: 2rem;
+            padding: 60px;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        
+        .no-board p:first-child {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            font-weight: 400;
+        }
+        
+        .no-board p:last-child {
+            font-size: 1.2rem;
+            opacity: 0.6;
+            font-weight: 300;
         }
         
         .tv-info {
             position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.8);
+            top: 16px;
+            left: 16px;
+            background: rgba(44, 62, 80, 0.95);
             color: white;
-            padding: 6px 12px;
+            padding: 10px 18px;
             border-radius: 6px;
-            font-size: 12px;
+            font-size: 13px;
             opacity: 0;
-            transition: opacity 0.3s;
+            transition: opacity 0.3s ease;
             z-index: 100;
-            font-weight: 600;
-            letter-spacing: 0.5px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
         
         body:hover .tv-info {
@@ -75,17 +97,18 @@
         
         .board-indicator {
             position: fixed;
-            bottom: 15px;
+            bottom: 24px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 8px;
+            gap: 10px;
             z-index: 100;
             opacity: 0;
-            transition: opacity 0.3s;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 8px 12px;
-            border-radius: 20px;
+            transition: opacity 0.3s ease;
+            background: rgba(44, 62, 80, 0.9);
+            padding: 12px 20px;
+            border-radius: 24px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
         }
         
         body:hover .board-indicator {
@@ -93,18 +116,23 @@
         }
         
         .indicator-dot {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.3);
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
+        }
+        
+        .indicator-dot:hover {
+            background: rgba(255, 255, 255, 0.6);
+            transform: scale(1.2);
         }
         
         .indicator-dot.active {
-            background: #fff;
-            width: 24px;
-            border-radius: 5px;
+            background: #1abc9c;
+            width: 32px;
+            border-radius: 6px;
         }
         
         body.hide-cursor {

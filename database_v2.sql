@@ -73,9 +73,9 @@ INSERT INTO departments (code, name, description) VALUES
 ('LOTUS', 'Lotus', 'Phòng Lotus - 1 TV'),
 ('JASMIN', 'Jasmin', 'Phòng Jasmin - 1 TV');
 
--- Insert TV screens
+-- Insert TV screens (7 TVs total)
 INSERT INTO tv_screens (department_id, code, name, location) VALUES
--- Basement: 1 TV (max 3 WCB)
+-- Basement: 1 TV (max 3 WCB - đặc biệt)
 (1, 'BASEMENT_TV1', 'Tầng hầm - TV 1', 'Tầng hầm'),
 -- FO: 2 TVs (max 1 WCB each)
 (2, 'FO_TV1', 'FO - TV 1', 'Lễ tân chính'),
