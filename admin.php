@@ -508,6 +508,10 @@
         </section>
 
         <!-- Boards Management -->
+        <section class="panel">
+            <h2>📋 Quản lý Welcome Boards</h2>
+            <div id="boardsList" class="loading">Đang tải...</div>
+        </section>
     </div>
 
     <script>
