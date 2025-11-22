@@ -1,3 +1,8 @@
+<?php
+// Redirect to admin.php as default
+header('Location: admin.php');
+exit;
+?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
