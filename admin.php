@@ -467,6 +467,40 @@
             </div>
         </section>
 
+        <!-- Quick Assignment: Chọn WCB và TV -->
+        <section class="panel">
+            <h2>🎯 Quick Assignment: Chọn WCB → Chọn TV → Assign</h2>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 20px;">
+                <!-- WCB Selection -->
+                <div style="background: var(--light); padding: 20px; border-radius: 10px;">
+                    <h3 style="margin: 0 0 15px 0; color: var(--dark);">📋 Chọn WCB (<span id="wcbSelectedCount">0</span>/∞)</h3>
+                    <div id="wcbChecklistContainer" style="max-height: 400px; overflow-y: auto;">
+                        <p style="color: #999;">Đang tải danh sách WCB...</p>
+                    </div>
+                </div>
+
+                <!-- TV Selection -->
+                <div style="background: var(--light); padding: 20px; border-radius: 10px;">
+                    <h3 style="margin: 0 0 15px 0; color: var(--dark);">📺 Chọn TV (<span id="tvSelectedCount">0</span>/6)</h3>
+                    <div id="tvChecklistContainer" style="max-height: 400px; overflow-y: auto;">
+                        <p style="color: #999;">Đang tải danh sách TV...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assignment Summary & Action -->
+            <div style="background: #e7f3ff; padding: 20px; border-radius: 10px; border-left: 4px solid var(--primary);">
+                <h4 style="margin: 0 0 10px 0;">📊 Tóm tắt Assignment</h4>
+                <div id="assignmentSummary" style="margin-bottom: 15px; color: #666;">
+                    Chọn WCB và TV để xem tóm tắt
+                </div>
+                <button onclick="performQuickAssignment()" class="btn-primary" style="width: 100%;">
+                    ✓ Assign các WCB đã chọn cho các TV đã chọn
+                </button>
+            </div>
+        </section>
+
         <!-- TV List by Department -->
         <section class="panel">
             <h2>📺 Danh sách TV (Chỉ hiển thị TV đang hoạt động)</h2>
@@ -508,6 +542,10 @@
                 renderTVList();
                 renderBoardsList();
                 loadBoardAssignments();
+                
+                // Render Quick Assignment checklists
+                renderWCBChecklist();
+                renderTVChecklist();
                 
                 // Add first WCB upload item
                 if (wcbCount === 0) addWCBUploadItem();
@@ -890,6 +928,162 @@
                 loadData();
             } else {
                 alert('❌ Không thể gỡ TV nào');
+            }
+        }
+
+        // ===== QUICK ASSIGNMENT FUNCTIONS =====
+        
+        // Render WCB Checklist
+        function renderWCBChecklist() {
+            const container = document.getElementById('wcbChecklistContainer');
+            if (boards.length === 0) {
+                container.innerHTML = '<p style="color: #999;">Chưa có WCB nào. Vui lòng upload WCB trước.</p>';
+                return;
+            }
+
+            let html = '';
+            boards.forEach(board => {
+                html += `
+                    <label style="display: flex; align-items: center; padding: 12px; background: white; border-radius: 8px; margin-bottom: 10px; cursor: pointer; border: 2px solid #e8eef5; transition: all 0.2s;">
+                        <input type="checkbox" 
+                               class="wcb-checkbox" 
+                               value="${board.id}" 
+                               onchange="updateQuickAssignmentSummary()"
+                               style="margin-right: 12px; width: 18px; height: 18px; cursor: pointer;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: var(--dark); margin-bottom: 4px;">${board.event_title}</div>
+                            <div style="font-size: 0.85rem; color: #666;">📅 ${board.event_date} | 🆔 ${board.id}</div>
+                        </div>
+                        <img src="${board.filepath}" style="width: 60px; height: 40px; object-fit: cover; border-radius: 4px; margin-left: 10px;">
+                    </label>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Render TV Checklist
+        function renderTVChecklist() {
+            const container = document.getElementById('tvChecklistContainer');
+            if (tvs.length === 0) {
+                container.innerHTML = '<p style="color: #999;">Không có TV nào đang hoạt động.</p>';
+                return;
+            }
+
+            let html = '';
+            departments.forEach(dept => {
+                const deptTVs = tvs.filter(tv => tv.department_id == dept.id);
+                if (deptTVs.length > 0) {
+                    html += `<div style="font-weight: 600; color: #667eea; margin: 15px 0 10px 0; font-size: 0.95rem;">${dept.name}</div>`;
+                    deptTVs.forEach(tv => {
+                        const isFull = tv.board_count >= 3;
+                        html += `
+                            <label style="display: flex; align-items: center; padding: 12px; background: ${isFull ? '#fff3cd' : 'white'}; border-radius: 8px; margin-bottom: 8px; cursor: ${isFull ? 'not-allowed' : 'pointer'}; border: 2px solid ${isFull ? '#ffc107' : '#e8eef5'}; opacity: ${isFull ? '0.7' : '1'}; transition: all 0.2s;">
+                                <input type="checkbox" 
+                                       class="tv-checkbox" 
+                                       value="${tv.id}" 
+                                       ${isFull ? 'disabled' : ''}
+                                       onchange="updateQuickAssignmentSummary()"
+                                       style="margin-right: 12px; width: 18px; height: 18px; cursor: ${isFull ? 'not-allowed' : 'pointer'};">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; color: var(--dark);">${tv.name}</div>
+                                    <div style="font-size: 0.85rem; color: #666;">
+                                        ${tv.board_count}/3 WCB ${isFull ? '⚠️ Đã đủ' : '✓ Có thể assign'}
+                                    </div>
+                                </div>
+                            </label>
+                        `;
+                    });
+                }
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Update Quick Assignment Summary
+        function updateQuickAssignmentSummary() {
+            const selectedWCBs = document.querySelectorAll('.wcb-checkbox:checked');
+            const selectedTVs = document.querySelectorAll('.tv-checkbox:checked');
+            
+            document.getElementById('wcbSelectedCount').textContent = selectedWCBs.length;
+            document.getElementById('tvSelectedCount').textContent = selectedTVs.length;
+
+            const summaryDiv = document.getElementById('assignmentSummary');
+            
+            if (selectedWCBs.length === 0 || selectedTVs.length === 0) {
+                summaryDiv.innerHTML = 'Chọn ít nhất 1 WCB và 1 TV để thực hiện assignment';
+                return;
+            }
+
+            const wcbNames = Array.from(selectedWCBs).map(cb => {
+                const board = boards.find(b => b.id == cb.value);
+                return board ? board.event_title : '';
+            });
+
+            const tvNames = Array.from(selectedTVs).map(cb => {
+                const tv = tvs.find(t => t.id == cb.value);
+                return tv ? tv.name : '';
+            });
+
+            summaryDiv.innerHTML = `
+                <div style="margin-bottom: 10px;">
+                    <strong>📋 WCB đã chọn (${selectedWCBs.length}):</strong><br>
+                    <span style="color: #667eea;">${wcbNames.join(', ')}</span>
+                </div>
+                <div>
+                    <strong>📺 TV đã chọn (${selectedTVs.length}):</strong><br>
+                    <span style="color: #28a745;">${tvNames.join(', ')}</span>
+                </div>
+                <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 6px; font-size: 0.9rem;">
+                    ⚠️ Mỗi WCB sẽ được assign cho TẤT CẢ ${selectedTVs.length} TV đã chọn
+                </div>
+            `;
+        }
+
+        // Perform Quick Assignment
+        async function performQuickAssignment() {
+            const selectedWCBs = Array.from(document.querySelectorAll('.wcb-checkbox:checked')).map(cb => cb.value);
+            const selectedTVs = Array.from(document.querySelectorAll('.tv-checkbox:checked')).map(cb => cb.value);
+
+            if (selectedWCBs.length === 0) {
+                alert('⚠️ Vui lòng chọn ít nhất 1 WCB');
+                return;
+            }
+
+            if (selectedTVs.length === 0) {
+                alert('⚠️ Vui lòng chọn ít nhất 1 TV');
+                return;
+            }
+
+            if (!confirm(`Bạn có chắc muốn assign ${selectedWCBs.length} WCB cho ${selectedTVs.length} TV?\n\nTổng cộng: ${selectedWCBs.length * selectedTVs.length} assignments`)) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('board_ids', JSON.stringify(selectedWCBs));
+            formData.append('tv_ids', JSON.stringify(selectedTVs));
+
+            try {
+                const response = await fetch('api.php?action=batch_assign', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`✅ Thành công!\n\n- Assigned: ${data.success_count}\n- Lỗi: ${data.error_count}\n\nTổng: ${data.total_assignments} assignments`);
+                    
+                    // Uncheck all
+                    document.querySelectorAll('.wcb-checkbox, .tv-checkbox').forEach(cb => cb.checked = false);
+                    updateQuickAssignmentSummary();
+                    
+                    // Reload data
+                    loadData();
+                } else {
+                    alert('❌ Lỗi: ' + (data.message || 'Không thể assign'));
+                }
+            } catch (error) {
+                alert('❌ Lỗi kết nối: ' + error.message);
             }
         }
 
