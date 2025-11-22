@@ -150,10 +150,12 @@
         
         if (!empty($active_boards)): ?>
             <?php foreach ($active_boards as $index => $board): ?>
-                <img src="<?php echo '/' . $board['filepath']; ?>" 
+                <img src="<?php echo getAssetUrl($board['filepath']) . '?v=' . $board['mtime']; ?>" 
                      alt="Welcome Board" 
                      class="welcome-board <?php echo $index === 0 ? 'active' : ''; ?>"
                      data-board-id="<?php echo $board['id']; ?>"
+                     data-filepath="<?php echo $board['filepath']; ?>"
+                     data-mtime="<?php echo $board['mtime']; ?>"
                      data-index="<?php echo $index; ?>">
             <?php endforeach; ?>
             
@@ -177,11 +179,22 @@
 
     <script>
         const TV_CODE = '<?php echo TV_CODE; ?>';
+        const BASE_PATH = '<?php echo BASE_PATH; ?>';
         let currentBoardIndex = 0;
         const boards = document.querySelectorAll('.welcome-board');
         const indicators = document.querySelectorAll('.indicator-dot');
         let autoRotateInterval;
-        let initialBoardIds = Array.from(boards).map(b => b.dataset.boardId).sort().join(',');
+        
+        // Create initial hash from current boards
+        let currentHash = Array.from(boards).map(b => 
+            `${b.dataset.boardId}:${b.dataset.filepath}:${b.dataset.mtime}`
+        ).sort().join('|');
+        
+        // Polling configuration
+        let pollInterval = 3000; // 3 seconds
+        let retryCount = 0;
+        const MAX_RETRIES = 3;
+        let checkUpdateInterval;
         
         function showBoard(index) {
             if (boards.length === 0) return;
@@ -212,37 +225,70 @@
         
         startAutoRotate();
         
-        // Auto update detection
+        // Improved auto update detection
         function checkForUpdates() {
             const timestamp = Date.now();
             const randomParam = Math.random().toString(36).substring(7);
             
-            fetch('/api.php?action=get_tv_boards&tv_code=' + TV_CODE + '&t=' + timestamp + '&r=' + randomParam, {
+            fetch(BASE_PATH + '/api.php?action=get_tv_boards&tv_code=' + TV_CODE + '&t=' + timestamp + '&r=' + randomParam, {
                 method: 'GET',
                 cache: 'no-store',
                 headers: {
-                    'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache'
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
                 }
             })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
                 .then(data => {
+                    // Reset retry on success
+                    retryCount = 0;
+                    pollInterval = 3000;
+                    
                     if (data.success && data.boards) {
-                        const newBoardIds = data.boards.map(b => b.id).sort().join(',');
-                        if (initialBoardIds !== newBoardIds) {
+                        // Create hash from board IDs + filepaths + modification times
+                        const newHash = data.boards.map(b => 
+                            `${b.id}:${b.filepath}:${b.mtime}`
+                        ).sort().join('|');
+                        
+                        // Compare hashes
+                        if (currentHash !== newHash) {
                             console.log('🔄 Phát hiện thay đổi! Đang cập nhật...');
-                            location.reload();
+                            console.log('Old hash:', currentHash);
+                            console.log('New hash:', newHash);
+                            
+                            // Force reload with cache clear
+                            location.reload(true);
                         }
                     }
                 })
-                .catch(err => console.log('Check update error:', err));
+                .catch(err => {
+                    console.log('Check update error:', err);
+                    retryCount++;
+                    
+                    // Exponential backoff after max retries
+                    if (retryCount >= MAX_RETRIES) {
+                        pollInterval = Math.min(pollInterval * 2, 30000); // Max 30 seconds
+                        console.log('Increasing poll interval to:', pollInterval / 1000, 'seconds');
+                        
+                        // Restart interval with new timing
+                        clearInterval(checkUpdateInterval);
+                        checkUpdateInterval = setInterval(checkForUpdates, pollInterval);
+                    }
+                });
         }
         
-        // Check mỗi 2 giây
-        setInterval(checkForUpdates, 2000);
+        // Start checking for updates every 3 seconds
+        checkUpdateInterval = setInterval(checkForUpdates, pollInterval);
         
-        // Auto refresh mỗi 60 giây (backup)
-        setInterval(() => location.reload(), 60000);
+        // Backup: Full refresh every 60 seconds
+        setInterval(() => {
+            console.log('⏰ Backup refresh (60s)');
+            location.reload(true);
+        }, 60000);
         
         // Ẩn cursor sau 3 giây
         let mouseTimer;

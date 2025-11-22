@@ -5,6 +5,23 @@ define('DB_USER', 'your_username');
 define('DB_PASS', 'your_password');
 define('DB_NAME', 'wcb_system');
 
+// Base path cho subfolder deployment
+define('BASE_PATH', '/wcb');
+
+// Helper function để generate base URL
+function getBaseUrl() {
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'];
+    return $protocol . '://' . $host . BASE_PATH;
+}
+
+// Helper function để generate asset URLs
+function getAssetUrl($path) {
+    // Remove leading slash if exists
+    $path = ltrim($path, '/');
+    return BASE_PATH . '/' . $path;
+}
+
 // Kết nối database
 function getDBConnection() {
     static $conn = null;
@@ -67,6 +84,10 @@ function getBoardsForTV($tv_id) {
     $boards = [];
     if ($result) {
         while ($row = $result->fetch_assoc()) {
+            // Add file modification time for cache-busting
+            $filepath = __DIR__ . '/' . $row['filepath'];
+            $row['mtime'] = file_exists($filepath) ? filemtime($filepath) : 0;
+            $row['full_url'] = getAssetUrl($row['filepath']);
             $boards[] = $row;
         }
     }
