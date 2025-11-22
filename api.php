@@ -96,6 +96,41 @@ try {
             ], JSON_UNESCAPED_UNICODE);
             break;
             
+        case 'get_tv_board_count':
+            // Lấy số WCB của một TV
+            $tv_id = $_GET['tv_id'] ?? '';
+            if (empty($tv_id)) {
+                echo json_encode(['success' => false, 'message' => 'Missing TV ID'], JSON_UNESCAPED_UNICODE);
+                break;
+            }
+            $count = getTVBoardCount($tv_id);
+            $can_assign = canAssignToTV($tv_id);
+            echo json_encode([
+                'success' => true,
+                'tv_id' => $tv_id,
+                'board_count' => $count,
+                'can_assign' => $can_assign,
+                'max_boards' => 3
+            ], JSON_UNESCAPED_UNICODE);
+            break;
+            
+        case 'validate_assignment':
+            // Kiểm tra có thể assign board cho TV không
+            $tv_id = $_GET['tv_id'] ?? '';
+            if (empty($tv_id)) {
+                echo json_encode(['success' => false, 'message' => 'Missing TV ID'], JSON_UNESCAPED_UNICODE);
+                break;
+            }
+            $can_assign = canAssignToTV($tv_id);
+            $count = getTVBoardCount($tv_id);
+            echo json_encode([
+                'success' => true,
+                'can_assign' => $can_assign,
+                'current_count' => $count,
+                'message' => $can_assign ? 'TV có thể nhận thêm WCB' : 'TV đã đủ 3 WCB'
+            ], JSON_UNESCAPED_UNICODE);
+            break;
+            
         case 'assign_to_department':
             // Assign board cho tất cả TV trong department
             $board_id = $_POST['board_id'] ?? '';
@@ -120,8 +155,52 @@ try {
                 break;
             }
             
-            $success = assignBoardToTV($board_id, $tv_id);
-            echo json_encode(['success' => $success], JSON_UNESCAPED_UNICODE);
+            $result = assignBoardToTV($board_id, $tv_id);
+            echo json_encode($result, JSON_UNESCAPED_UNICODE);
+            break;
+            
+        case 'batch_assign':
+            // Assign nhiều boards cùng lúc
+            $board_ids = $_POST['board_ids'] ?? [];
+            $tv_ids = $_POST['tv_ids'] ?? [];
+            
+            if (empty($board_ids) || empty($tv_ids)) {
+                echo json_encode(['success' => false, 'message' => 'Missing parameters'], JSON_UNESCAPED_UNICODE);
+                break;
+            }
+            
+            // Parse JSON nếu cần
+            if (is_string($board_ids)) $board_ids = json_decode($board_ids, true);
+            if (is_string($tv_ids)) $tv_ids = json_decode($tv_ids, true);
+            
+            $results = [];
+            $success_count = 0;
+            $error_count = 0;
+            
+            foreach ($board_ids as $board_id) {
+                foreach ($tv_ids as $tv_id) {
+                    $result = assignBoardToTV($board_id, $tv_id);
+                    if ($result['success']) {
+                        $success_count++;
+                    } else {
+                        $error_count++;
+                    }
+                    $results[] = [
+                        'board_id' => $board_id,
+                        'tv_id' => $tv_id,
+                        'success' => $result['success'],
+                        'message' => $result['message']
+                    ];
+                }
+            }
+            
+            echo json_encode([
+                'success' => $success_count > 0,
+                'total_assignments' => count($results),
+                'success_count' => $success_count,
+                'error_count' => $error_count,
+                'results' => $results
+            ], JSON_UNESCAPED_UNICODE);
             break;
             
         case 'unassign_from_department':

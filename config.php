@@ -54,10 +54,10 @@ function getDepartments() {
     return $departments;
 }
 
-// Lấy danh sách TV theo department
+// Lấy danh sách TV theo department (chỉ active)
 function getTVsByDepartment($department_id = null) {
     $conn = getDBConnection();
-    $where = $department_id ? "WHERE department_id = $department_id" : "";
+    $where = $department_id ? "WHERE tv.department_id = $department_id AND tv.status = 'active'" : "WHERE tv.status = 'active'";
     $result = $conn->query("SELECT tv.*, d.name as department_name, d.code as department_code 
                            FROM tv_screens tv 
                            JOIN departments d ON tv.department_id = d.id 
@@ -66,10 +66,32 @@ function getTVsByDepartment($department_id = null) {
     $tvs = [];
     if ($result) {
         while ($row = $result->fetch_assoc()) {
+            // Add board count for each TV
+            $row['board_count'] = getTVBoardCount($row['id']);
+            $row['can_assign'] = canAssignToTV($row['id']);
             $tvs[] = $row;
         }
     }
     return $tvs;
+}
+
+// Lấy số lượng WCB đang active của một TV
+function getTVBoardCount($tv_id) {
+    $conn = getDBConnection();
+    $stmt = $conn->prepare("SELECT COUNT(*) as count 
+                           FROM board_assignments 
+                           WHERE tv_id = ? AND status = 'active'");
+    $stmt->bind_param("i", $tv_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    return (int)$row['count'];
+}
+
+// Kiểm tra TV có thể nhận thêm WCB không (max 3)
+function canAssignToTV($tv_id) {
+    $count = getTVBoardCount($tv_id);
+    return $count < 3;
 }
 
 // Lấy boards được assign cho TV
@@ -161,14 +183,21 @@ function assignBoardToDepartment($board_id, $department_id) {
     return ['success' => $success_count > 0, 'assigned_count' => $success_count, 'total_tvs' => count($tvs)];
 }
 
-// Assign board cho một TV cụ thể
+// Assign board cho một TV cụ thể (với validation max 3 WCB)
 function assignBoardToTV($board_id, $tv_id) {
+    // Kiểm tra TV có thể nhận thêm WCB không
+    if (!canAssignToTV($tv_id)) {
+        return ['success' => false, 'message' => 'TV đã đủ 3 WCB, không thể assign thêm'];
+    }
+    
     $conn = getDBConnection();
     $stmt = $conn->prepare("INSERT INTO board_assignments (board_id, tv_id, status) 
                            VALUES (?, ?, 'active')
                            ON DUPLICATE KEY UPDATE status = 'active', updated_at = CURRENT_TIMESTAMP");
     $stmt->bind_param("si", $board_id, $tv_id);
-    return $stmt->execute();
+    $success = $stmt->execute();
+    
+    return ['success' => $success, 'message' => $success ? 'Assign thành công' : 'Lỗi khi assign'];
 }
 
 // Unassign board từ tất cả TV trong department

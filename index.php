@@ -12,7 +12,7 @@
             <h1>Hệ thống Welcome Board</h1>
             <nav>
                 <a href="#business" class="nav-btn">Phòng Kinh Doanh</a>
-                <a href="#admin" class="nav-btn">Admin</a>
+                <a href="admin.php" class="nav-btn">Admin</a>
                 <a href="display.php" target="_blank" class="nav-btn display-btn">Chiếu màn hình</a>
                 <a href="test_auto_update.php" target="_blank" class="nav-btn" style="background: #9b59b6;">Test Auto Update</a>
             </nav>

@@ -57,14 +57,16 @@
             position: fixed;
             top: 10px;
             left: 10px;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.8);
             color: white;
-            padding: 8px 15px;
-            border-radius: 5px;
-            font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
             opacity: 0;
             transition: opacity 0.3s;
             z-index: 100;
+            font-weight: 600;
+            letter-spacing: 0.5px;
         }
         
         body:hover .tv-info {
@@ -73,14 +75,17 @@
         
         .board-indicator {
             position: fixed;
-            bottom: 20px;
+            bottom: 15px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 10px;
+            gap: 8px;
             z-index: 100;
             opacity: 0;
             transition: opacity 0.3s;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 12px;
+            border-radius: 20px;
         }
         
         body:hover .board-indicator {
@@ -88,18 +93,18 @@
         }
         
         .indicator-dot {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.4);
             cursor: pointer;
             transition: all 0.3s;
         }
         
         .indicator-dot.active {
             background: #fff;
-            width: 30px;
-            border-radius: 6px;
+            width: 24px;
+            border-radius: 5px;
         }
         
         body.hide-cursor {
