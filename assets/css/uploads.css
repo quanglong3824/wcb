@@ -30,7 +30,7 @@
 }
 
 .dropzone {
-    border: 3px dashed #667eea;
+    border: 3px dashed #d4af37;
     border-radius: 10px;
     padding: 60px 20px;
     text-align: center;
@@ -52,7 +52,7 @@
 
 .dropzone-icon {
     font-size: 4em;
-    color: #667eea;
+    color: #d4af37;
     margin-bottom: 20px;
 }
 
@@ -73,7 +73,7 @@
 }
 
 .upload-btn {
-    background: #667eea;
+    background: #d4af37;
     color: white;
     border: none;
     padding: 12px 30px;
@@ -126,7 +126,7 @@
 
 .progress-status {
     font-size: 0.9em;
-    color: #667eea;
+    color: #d4af37;
 }
 
 .progress-bar-container {
@@ -139,7 +139,7 @@
 
 .progress-bar {
     height: 100%;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(90deg, #d4af37 0%, #764ba2 100%);
     transition: width 0.3s;
     border-radius: 10px;
 }
@@ -180,9 +180,9 @@
 
 .filter-btn:hover,
 .filter-btn.active {
-    background: #667eea;
+    background: #d4af37;
     color: white;
-    border-color: #667eea;
+    border-color: #d4af37;
 }
 
 /* File Grid */

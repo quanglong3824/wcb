@@ -40,12 +40,12 @@
 }
 
 .settings-tab:hover {
-    color: #667eea;
+    color: #d4af37;
 }
 
 .settings-tab.active {
-    color: #667eea;
-    border-bottom-color: #667eea;
+    color: #d4af37;
+    border-bottom-color: #d4af37;
     font-weight: 600;
 }
 
@@ -155,7 +155,7 @@
 }
 
 input:checked + .toggle-slider {
-    background-color: #667eea;
+    background-color: #d4af37;
 }
 
 input:checked + .toggle-slider:before {
@@ -207,7 +207,7 @@ input:checked + .toggle-slider:before {
 }
 
 .btn-save-settings {
-    background: #667eea;
+    background: #d4af37;
     color: white;
     border: none;
     padding: 12px 30px;
@@ -276,7 +276,7 @@ input:checked + .toggle-slider:before {
 }
 
 .user-role-badge.admin {
-    background: #667eea;
+    background: #d4af37;
     color: white;
 }
 
@@ -291,7 +291,7 @@ input:checked + .toggle-slider:before {
 }
 
 .btn-add-user {
-    background: #667eea;
+    background: #d4af37;
     color: white;
     border: none;
     padding: 10px 20px;

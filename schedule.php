@@ -72,7 +72,7 @@ include 'includes/sidebar.php';
                 <tbody id="scheduleTableBody">
                     <tr>
                         <td colspan="6" style="text-align: center; padding: 40px;">
-                            <i class="fas fa-spinner fa-spin" style="font-size: 2em; color: #667eea;"></i>
+                            <i class="fas fa-spinner fa-spin" style="font-size: 2em; color: #d4af37;"></i>
                             <p style="margin-top: 15px; color: #999;">Đang tải dữ liệu...</p>
                         </td>
                     </tr>

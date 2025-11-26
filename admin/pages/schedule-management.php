@@ -6,7 +6,7 @@
 <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h3>Lịch chiếu</h3>
-        <button style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+        <button style="background: #d4af37; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
             <i class="fas fa-plus"></i> Thêm lịch mới
         </button>
     </div>

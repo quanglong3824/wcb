@@ -12,26 +12,24 @@ $basePath = isset($basePath) ? $basePath : '../';
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="<?php echo $basePath; ?>assets/css/admin.css">
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="<?php echo $basePath; ?>assets/css/style.css">
 </head>
 <body>
-    <!-- Top Header -->
-    <header class="top-header">
-        <div class="header-left">
-            <i class="fas fa-tv"></i>
-            <h2>Welcome Board System</h2>
-        </div>
-        <div class="header-right">
-            <div class="user-info">
-                <div class="user-avatar">
-                    <i class="fas fa-user"></i>
-                </div>
-                <span><?php echo isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : 'Admin'; ?></span>
+    <!-- Top Info Bar -->
+    <div class="top-info-bar">
+        <div class="info-bar-content">
+            <div class="info-bar-left">
+                <span><i class="fas fa-hotel"></i> Quang Long Hotel - Welcome Board System</span>
             </div>
-            <button class="logout-btn" onclick="confirmLogout()">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Đăng xuất</span>
-            </button>
+            <div class="info-bar-right">
+                <a href="#" class="info-link"><i class="fas fa-question-circle"></i> Hỗ trợ</a>
+                <span class="info-divider">|</span>
+                <a href="#" class="info-link"><i class="fas fa-book"></i> Tài liệu</a>
+                <span class="info-divider">|</span>
+                <span class="info-version">v1.0</span>
+            </div>
         </div>
-    </header>
+    </div>
+    
+    <div class="app-container">

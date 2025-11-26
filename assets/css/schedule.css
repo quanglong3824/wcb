@@ -18,7 +18,7 @@
 }
 
 .btn-add-schedule {
-    background: #667eea;
+    background: #d4af37;
     color: white;
     border: none;
     padding: 12px 25px;
@@ -59,7 +59,7 @@
 }
 
 .calendar-nav button {
-    background: #667eea;
+    background: #d4af37;
     color: white;
     border: none;
     padding: 8px 15px;
@@ -161,7 +161,7 @@
 }
 
 .btn-edit-schedule {
-    background: #667eea;
+    background: #d4af37;
     color: white;
 }
 
@@ -283,7 +283,7 @@
 }
 
 .btn-save {
-    background: #667eea;
+    background: #d4af37;
     color: white;
     border: none;
     padding: 10px 20px;

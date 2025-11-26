@@ -27,7 +27,7 @@
                     </span>
                 </td>
                 <td style="padding: 12px; border-bottom: 1px solid #e0e0e0;">
-                    <button style="background: #667eea; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer;">
+                    <button style="background: #d4af37; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer;">
                         <i class="fas fa-edit"></i> Sửa
                     </button>
                 </td>

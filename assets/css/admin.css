@@ -13,7 +13,7 @@ body {
 
 /* Header Styles */
 .top-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #d4af37 0%, #764ba2 100%);
     color: white;
     padding: 15px 30px;
     display: flex;
@@ -115,14 +115,14 @@ body {
 
 .sidebar-menu a:hover {
     background: #f5f6fa;
-    border-left-color: #667eea;
-    color: #667eea;
+    border-left-color: #d4af37;
+    color: #d4af37;
 }
 
 .sidebar-menu a.active {
     background: linear-gradient(90deg, rgba(102,126,234,0.1) 0%, transparent 100%);
-    border-left-color: #667eea;
-    color: #667eea;
+    border-left-color: #d4af37;
+    color: #d4af37;
     font-weight: 600;
 }
 
@@ -195,7 +195,7 @@ body {
 
 .stat-card-icon.blue {
     background: rgba(102,126,234,0.1);
-    color: #667eea;
+    color: #d4af37;
 }
 
 .stat-card-icon.green {
@@ -240,7 +240,7 @@ body {
 }
 
 .footer a {
-    color: #667eea;
+    color: #d4af37;
     text-decoration: none;
 }
 

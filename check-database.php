@@ -64,7 +64,7 @@ $extensions = [
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1a1a1a 0%, #2c2c2c 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -77,14 +77,14 @@ $extensions = [
         .header {
             background: white;
             padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 3px solid #d4af37;
+            box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
             margin-bottom: 20px;
             text-align: center;
         }
 
         .header h1 {
-            color: #667eea;
+            color: #d4af37;
             font-size: 2.5em;
             margin-bottom: 10px;
         }
@@ -116,16 +116,16 @@ $extensions = [
         .card {
             background: white;
             padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 3px solid #d4af37;
+            box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
             margin-bottom: 20px;
         }
 
         .card h2 {
-            color: #667eea;
+            color: #d4af37;
             margin-bottom: 20px;
             padding-bottom: 10px;
-            border-bottom: 2px solid #667eea;
+            border-bottom: 2px solid #d4af37;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -141,9 +141,8 @@ $extensions = [
             display: flex;
             justify-content: space-between;
             padding: 12px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
+            background: #faf6eb;
+            border-left: 4px solid #d4af37;
         }
 
         .info-label {
@@ -175,10 +174,9 @@ $extensions = [
         }
 
         .table-item {
-            background: #f0f4ff;
+            background: #faf6eb;
             padding: 10px 15px;
-            border-radius: 8px;
-            border-left: 3px solid #667eea;
+            border-left: 3px solid #d4af37;
             font-family: 'Courier New', monospace;
             font-size: 0.9em;
         }
@@ -202,11 +200,10 @@ $extensions = [
         }
 
         .refresh-btn {
-            background: #667eea;
+            background: #d4af37;
             color: white;
-            border: none;
+            border: 2px solid #d4af37;
             padding: 12px 30px;
-            border-radius: 8px;
             font-size: 1em;
             cursor: pointer;
             display: flex;
@@ -214,12 +211,14 @@ $extensions = [
             gap: 10px;
             margin: 20px auto;
             transition: all 0.3s;
+            font-weight: 600;
         }
 
         .refresh-btn:hover {
-            background: #5568d3;
+            background: #b8941f;
+            border-color: #b8941f;
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4);
         }
 
         .alert {

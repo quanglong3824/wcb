@@ -26,7 +26,7 @@
         </div>
         
         <button type="submit" 
-                style="background: #667eea; color: white; border: none; padding: 12px 30px; border-radius: 5px; cursor: pointer; font-size: 1em;">
+                style="background: #d4af37; color: white; border: none; padding: 12px 30px; border-radius: 5px; cursor: pointer; font-size: 1em;">
             <i class="fas fa-save"></i> Lưu cài đặt
         </button>
     </form>

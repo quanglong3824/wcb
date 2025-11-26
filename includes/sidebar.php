@@ -55,17 +55,38 @@ $menuItems = [
 
 <!-- Sidebar Navigation -->
 <aside class="sidebar">
-    <nav>
-        <ul class="sidebar-menu">
+    <div class="sidebar-header">
+        <div class="sidebar-logo">
+            <i class="fas fa-tv"></i>
+            <div>
+                <h2>WCB System</h2>
+                <p>Aurora Hotel</p>
+            </div>
+        </div>
+    </div>
+    
+    <nav class="sidebar-nav">
+        <div class="nav-section">
+            <div class="nav-section-title">Main Menu</div>
             <?php foreach ($menuItems as $item): ?>
-                <li>
-                    <a href="<?php echo htmlspecialchars($item['url']); ?>" 
-                       class="<?php echo $item['active'] ? 'active' : ''; ?>">
-                        <i class="<?php echo htmlspecialchars($item['icon']); ?>"></i>
-                        <span><?php echo htmlspecialchars($item['label']); ?></span>
-                    </a>
-                </li>
+                <a href="<?php echo htmlspecialchars($item['url']); ?>" 
+                   class="nav-item <?php echo $item['active'] ? 'active' : ''; ?>">
+                    <i class="<?php echo htmlspecialchars($item['icon']); ?>"></i>
+                    <span><?php echo htmlspecialchars($item['label']); ?></span>
+                </a>
             <?php endforeach; ?>
-        </ul>
+        </div>
+        
+        <div class="nav-section">
+            <div class="nav-section-title">Account</div>
+            <a href="<?php echo $basePath; ?>profile.php" class="nav-item">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+            </a>
+            <a href="<?php echo $basePath; ?>auth/logout.php" class="nav-item">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Đăng xuất</span>
+            </a>
+        </div>
     </nav>
 </aside>

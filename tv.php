@@ -25,30 +25,45 @@ include 'includes/sidebar.php';
         <div class="tv-header">
             <div>
                 <h1><i class="fas fa-tv"></i> Quản lý TV</h1>
-                <p>Quản lý và cấu hình các màn hình TV trong hệ thống</p>
+                <p>Quản lý 7 màn hình TV tại các vị trí trong khách sạn</p>
             </div>
-            <button class="btn-add-tv" onclick="openAddTVModal()">
-                <i class="fas fa-plus"></i>
-                Thêm TV mới
-            </button>
         </div>
 
-        <!-- View Toggle -->
-        <div class="view-toggle">
-            <button class="active" data-view="grid" onclick="toggleView('grid')">
-                <i class="fas fa-th"></i> Lưới
-            </button>
-            <button data-view="table" onclick="toggleView('table')">
-                <i class="fas fa-list"></i> Danh sách
-            </button>
+        <!-- Search and Filter -->
+        <div class="tv-controls">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" 
+                       id="searchInput" 
+                       placeholder="Tìm kiếm theo tên hoặc vị trí..." 
+                       onkeyup="filterTVs()">
+            </div>
+            
+            <div class="filter-group">
+                <select id="statusFilter" onchange="filterTVs()">
+                    <option value="all">Tất cả trạng thái</option>
+                    <option value="online">Online</option>
+                    <option value="offline">Offline</option>
+                </select>
+                
+                <select id="contentFilter" onchange="filterTVs()">
+                    <option value="all">Tất cả nội dung</option>
+                    <option value="playing">Đang trình chiếu</option>
+                    <option value="idle">Không trình chiếu</option>
+                </select>
+                
+                <button class="btn-refresh" onclick="refreshTVs()" title="Làm mới">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
         </div>
 
-        <!-- TV Container (Grid or Table) -->
-        <div id="tvContainer" class="tv-grid-view">
+        <!-- TV Grid -->
+        <div id="tvGrid" class="tv-grid">
             <!-- TVs will be loaded here dynamically -->
-            <div style="grid-column: 1/-1; text-align: center; padding: 60px; color: #999;">
-                <i class="fas fa-spinner fa-spin" style="font-size: 3em; display: block; margin-bottom: 20px;"></i>
-                <p style="font-size: 1.2em;">Đang tải dữ liệu...</p>
+            <div class="empty-state" style="grid-column: 1/-1;">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Đang tải dữ liệu...</p>
             </div>
         </div>
     </div>
