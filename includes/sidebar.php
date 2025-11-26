@@ -23,8 +23,8 @@ $menuItems = [
     [
         'icon' => 'fas fa-tv',
         'label' => 'Quản lý TV',
-        'url' => $basePath . 'admin/index.php?page=tv',
-        'active' => ($currentParam == 'tv')
+        'url' => $basePath . 'tv.php',
+        'active' => ($currentPage == 'tv.php')
     ],
     [
         'icon' => 'fas fa-image',
@@ -40,15 +40,15 @@ $menuItems = [
     ],
     [
         'icon' => 'fas fa-calendar-alt',
-        'label' => 'Quản lý chiếu',
-        'url' => $basePath . 'admin/index.php?page=schedule',
-        'active' => ($currentParam == 'schedule')
+        'label' => 'Lịch chiếu',
+        'url' => $basePath . 'schedule.php',
+        'active' => ($currentPage == 'schedule.php')
     ],
     [
         'icon' => 'fas fa-cog',
         'label' => 'Cài đặt',
-        'url' => $basePath . 'admin/index.php?page=settings',
-        'active' => ($currentParam == 'settings')
+        'url' => $basePath . 'settings.php',
+        'active' => ($currentPage == 'settings.php')
     ]
 ];
 ?>
