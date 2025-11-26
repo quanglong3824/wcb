@@ -63,6 +63,38 @@ function createTVCard(tv) {
         contentTypeText = 'Video';
     }
     
+    // Get content preview image
+    const previewImage = tv.current_content_path || tv.default_content_path;
+    const previewType = tv.current_content_type || tv.default_content_type;
+    
+    // Build preview HTML
+    let previewHTML = '';
+    if (previewImage && previewType === 'image') {
+        previewHTML = `
+            <div class="tv-preview">
+                <img src="${escapeHtml(previewImage)}" alt="Preview" onerror="this.parentElement.innerHTML='<div class=\\'tv-preview-placeholder\\'><i class=\\'fas fa-image\\'></i><p>Không tải được hình</p></div>'">
+            </div>
+        `;
+    } else if (previewImage && previewType === 'video') {
+        previewHTML = `
+            <div class="tv-preview">
+                <video src="${escapeHtml(previewImage)}" muted></video>
+                <div class="tv-preview-overlay">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+            </div>
+        `;
+    } else {
+        previewHTML = `
+            <div class="tv-preview">
+                <div class="tv-preview-placeholder">
+                    <i class="fas fa-tv"></i>
+                    <p>Chưa có nội dung</p>
+                </div>
+            </div>
+        `;
+    }
+    
     // Build playing content HTML
     let playingContentHTML = '';
     if (tv.current_content_id && tv.current_content_name) {
@@ -115,6 +147,8 @@ function createTVCard(tv) {
                 </span>
             </div>
             
+            ${previewHTML}
+            
             <div class="tv-card-body">
                 <div class="tv-detail-row">
                     <span class="tv-detail-label">Folder:</span>
@@ -161,11 +195,122 @@ function viewTV(tvId) {
     }
 }
 
-// Edit TV
+// Edit TV - Open modal with TV data
 function editTV(tvId) {
-    alert('Chức năng chỉnh sửa TV đang được phát triển.\nTV ID: ' + tvId);
-    // TODO: Implement edit functionality
+    const tv = allTVs.find(t => t.id == tvId);
+    if (!tv) {
+        alert('Không tìm thấy thông tin TV!');
+        return;
+    }
+    
+    // Fill form with TV data
+    document.getElementById('editTvId').value = tv.id;
+    document.getElementById('editTvName').value = tv.name;
+    document.getElementById('editTvLocation').value = tv.location;
+    document.getElementById('editTvFolder').value = tv.folder;
+    document.getElementById('editTvIpAddress').value = tv.ip_address || '';
+    document.getElementById('editTvStatus').value = tv.status;
+    document.getElementById('editTvDescription').value = tv.description || '';
+    
+    // Show modal
+    const modal = document.getElementById('editTVModal');
+    modal.classList.add('active');
+    
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
 }
+
+// Close edit modal
+function closeEditModal() {
+    const modal = document.getElementById('editTVModal');
+    modal.classList.remove('active');
+    
+    // Restore body scroll
+    document.body.style.overflow = '';
+}
+
+// Save TV
+function saveTV(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    
+    // Show loading
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+    submitBtn.disabled = true;
+    
+    fetch('api/update-tv.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            showMessage('Cập nhật thông tin TV thành công!', 'success');
+            
+            // Close modal
+            closeEditModal();
+            
+            // Reload TV list
+            loadTVs();
+        } else {
+            showMessage(data.message || 'Có lỗi xảy ra khi cập nhật!', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Có lỗi xảy ra khi cập nhật!', 'error');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+// Show message
+function showMessage(message, type) {
+    // Remove existing messages
+    const existingMsg = document.querySelector('.alert-message');
+    if (existingMsg) {
+        existingMsg.remove();
+    }
+    
+    // Create message element
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `alert-message alert-${type}`;
+    msgDiv.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        <span>${message}</span>
+    `;
+    
+    // Insert at top of container
+    const container = document.querySelector('.tv-container');
+    container.insertBefore(msgDiv, container.firstChild);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        msgDiv.style.animation = 'fadeOut 0.3s';
+        setTimeout(() => msgDiv.remove(), 300);
+    }, 5000);
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('editTVModal');
+    if (event.target === modal) {
+        closeEditModal();
+    }
+});
+
+// Close modal with ESC key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeEditModal();
+    }
+});
 
 // Show error message
 function showError(message) {

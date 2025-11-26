@@ -68,53 +68,70 @@ include 'includes/sidebar.php';
         </div>
     </div>
 
-    <!-- TV Modal -->
-    <div id="tvModal" class="tv-modal">
+    <!-- Edit TV Modal -->
+    <div id="editTVModal" class="tv-modal">
         <div class="tv-modal-content">
             <div class="modal-header">
-                <h2 id="modalTitle">Thêm TV mới</h2>
-                <button class="modal-close" onclick="closeTVModal()">
+                <h2><i class="fas fa-edit"></i> Chỉnh sửa thông tin TV</h2>
+                <button class="modal-close" onclick="closeEditModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             
-            <form id="tvForm" onsubmit="saveTV(event)">
-                <input type="hidden" id="tvId" name="tvId">
-                
-                <div class="form-group">
-                    <label>Tên TV *</label>
-                    <input type="text" id="tvName" name="tvName" 
-                           placeholder="Ví dụ: TV Basement" required>
-                </div>
-                
-                <div class="form-group">
-                    <label>Vị trí *</label>
-                    <input type="text" id="tvLocation" name="tvLocation" 
-                           placeholder="Ví dụ: Tầng hầm" required>
-                </div>
-                
-                <div class="form-group">
-                    <label>Địa chỉ IP</label>
-                    <input type="text" id="tvIpAddress" name="tvIpAddress" 
-                           placeholder="Ví dụ: 192.168.1.100">
-                    <small>Địa chỉ IP của thiết bị TV (tùy chọn)</small>
-                </div>
-                
-                <div class="form-group">
-                    <label>Mô tả</label>
-                    <textarea id="tvDescription" name="tvDescription" 
-                              placeholder="Nhập mô tả cho TV..."></textarea>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn-cancel" onclick="closeTVModal()">
-                        Hủy
-                    </button>
-                    <button type="submit" class="btn-save">
-                        <i class="fas fa-save"></i> Lưu
-                    </button>
-                </div>
-            </form>
+            <div class="modal-body">
+                <form id="editTVForm" onsubmit="saveTV(event)">
+                    <input type="hidden" id="editTvId" name="tvId">
+                    
+                    <div class="form-group">
+                        <label for="editTvName">Tên TV *</label>
+                        <input type="text" id="editTvName" name="tvName" 
+                               placeholder="Ví dụ: TV Basement" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editTvLocation">Vị trí *</label>
+                        <input type="text" id="editTvLocation" name="tvLocation" 
+                               placeholder="Ví dụ: Tầng hầm" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editTvFolder">Thư mục *</label>
+                        <input type="text" id="editTvFolder" name="tvFolder" 
+                               placeholder="Ví dụ: basement hoặc fo/tv1" required>
+                        <small>Tên thư mục chứa file hiển thị (không dấu, viết thường, có thể dùng /)</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editTvIpAddress">Địa chỉ IP</label>
+                        <input type="text" id="editTvIpAddress" name="tvIpAddress" 
+                               placeholder="Ví dụ: 192.168.1.100">
+                        <small>Địa chỉ IP của thiết bị TV (tùy chọn)</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editTvStatus">Trạng thái</label>
+                        <select id="editTvStatus" name="tvStatus">
+                            <option value="online">Online</option>
+                            <option value="offline">Offline</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editTvDescription">Mô tả</label>
+                        <textarea id="editTvDescription" name="tvDescription" 
+                                  placeholder="Nhập mô tả cho TV..." rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel" onclick="closeEditModal()">
+                            <i class="fas fa-times"></i> Hủy
+                        </button>
+                        <button type="submit" class="btn-save">
+                            <i class="fas fa-save"></i> Lưu thay đổi
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </main>
