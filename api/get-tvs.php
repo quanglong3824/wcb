@@ -8,7 +8,7 @@ header('Content-Type: application/json');
 $conn = getDBConnection();
 
 if ($conn) {
-    // Sử dụng view để lấy thông tin TV kèm nội dung chi tiết
+    // Lấy thông tin TV kèm nội dung chi tiết
     $query = "SELECT 
                 t.id,
                 t.name,
@@ -35,8 +35,8 @@ if ($conn) {
                     ELSE t.status
                 END as actual_status
               FROM tvs t
-              LEFT JOIN media m ON t.current_content_id = m.id
-              LEFT JOIN media dm ON t.default_content_id = dm.id
+              LEFT JOIN media m ON t.current_content_id = m.id AND m.status = 'active'
+              LEFT JOIN media dm ON t.default_content_id = dm.id AND dm.status = 'active'
               ORDER BY t.id ASC";
     
     $result = $conn->query($query);
@@ -52,6 +52,35 @@ if ($conn) {
             if ($row['display_url']) {
                 $row['full_display_url'] = BASE_URL . $row['display_url'];
             }
+            
+            // Lấy danh sách tất cả WCB đã gán cho TV này
+            $tvId = $row['id'];
+            $assignQuery = "SELECT 
+                                tma.is_default,
+                                m.id,
+                                m.name,
+                                m.type,
+                                m.file_path,
+                                m.thumbnail_path
+                            FROM tv_media_assignments tma
+                            INNER JOIN media m ON tma.media_id = m.id
+                            WHERE tma.tv_id = ? AND m.status = 'active'
+                            ORDER BY tma.is_default DESC, m.name ASC";
+            
+            $assignStmt = $conn->prepare($assignQuery);
+            $assignStmt->bind_param("i", $tvId);
+            $assignStmt->execute();
+            $assignResult = $assignStmt->get_result();
+            
+            $assignedMedia = [];
+            while ($assignRow = $assignResult->fetch_assoc()) {
+                $assignedMedia[] = $assignRow;
+            }
+            
+            $assignStmt->close();
+            
+            $row['assigned_media'] = $assignedMedia;
+            $row['assigned_media_count'] = count($assignedMedia);
             
             $tvs[] = $row;
         }

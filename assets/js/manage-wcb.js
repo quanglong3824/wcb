@@ -38,16 +38,39 @@ function displayWCBList(wcbs) {
         return;
     }
     
-    tbody.innerHTML = wcbs.map(wcb => `
+    tbody.innerHTML = wcbs.map(wcb => {
+        // Determine preview source
+        const previewSrc = wcb.type === 'image' ? wcb.file_path : (wcb.thumbnail_path || 'assets/img/video-placeholder.png');
+        
+        return `
         <tr>
             <td>${wcb.id}</td>
             <td>
-                <img src="${wcb.thumbnail}" alt="${wcb.name}" class="wcb-preview" 
-                     onclick="previewWCB('${wcb.id}')">
+                <div class="wcb-preview-container" onclick="previewWCB(${wcb.id})" title="Click để xem">
+                    ${wcb.type === 'image' ? `
+                        <img src="${escapeHtml(previewSrc)}" alt="${escapeHtml(wcb.name)}" class="wcb-preview" 
+                             onerror="this.src='assets/img/no-image.png'">
+                    ` : `
+                        <div class="wcb-preview video-preview">
+                            <i class="fas fa-play-circle"></i>
+                            <span>Video</span>
+                        </div>
+                    `}
+                </div>
             </td>
-            <td>${wcb.name}</td>
-            <td>${wcb.type === 'image' ? 'Hình ảnh' : 'Video'}</td>
-            <td>${wcb.assignedTo || 'Chưa gán'}</td>
+            <td>
+                <div class="wcb-name-cell">
+                    <strong>${escapeHtml(wcb.name)}</strong>
+                    ${wcb.description ? `<small>${escapeHtml(wcb.description.substring(0, 50))}${wcb.description.length > 50 ? '...' : ''}</small>` : ''}
+                </div>
+            </td>
+            <td>
+                <span class="wcb-type-badge ${wcb.type}">
+                    <i class="fas fa-${wcb.type === 'image' ? 'image' : 'video'}"></i>
+                    ${wcb.type === 'image' ? 'Hình ảnh' : 'Video'}
+                </span>
+            </td>
+            <td>${wcb.assigned_to_tvs || '<span style="color: #999;">Chưa gán</span>'}</td>
             <td>
                 <span class="wcb-status ${wcb.status}">
                     ${wcb.status === 'active' ? 'Đang sử dụng' : 'Không sử dụng'}
@@ -55,19 +78,23 @@ function displayWCBList(wcbs) {
             </td>
             <td>
                 <div class="wcb-actions">
-                    <button class="btn-edit" onclick="editWCB('${wcb.id}')">
+                    <button class="btn-view" onclick="event.stopPropagation(); previewWCB(${wcb.id})" title="Xem">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn-edit" onclick="event.stopPropagation(); editWCBName(${wcb.id})" title="Đổi tên">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn-assign" onclick="assignWCB('${wcb.id}')">
+                    <button class="btn-assign" onclick="event.stopPropagation(); assignWCB(${wcb.id})" title="Gán">
                         <i class="fas fa-tv"></i>
                     </button>
-                    <button class="btn-delete-wcb" onclick="deleteWCB('${wcb.id}')">
+                    <button class="btn-delete-wcb" onclick="event.stopPropagation(); deleteWCB(${wcb.id})" title="Xóa">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
             </td>
         </tr>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // Open add WCB modal
@@ -140,49 +167,140 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-// Edit WCB
-function editWCB(id) {
+// Edit WCB Name - Only allow editing name and description
+function editWCBName(id) {
     const wcb = wcbData.find(w => w.id == id);
-    if (!wcb) return;
-    
-    const modal = document.getElementById('wcbModal');
-    const form = document.getElementById('wcbForm');
-    
-    if (modal && form) {
-        // Reset form first
-        form.reset();
-        
-        // Fill form with data
-        document.getElementById('modalTitle').textContent = 'Chỉnh sửa WCB';
-        document.getElementById('wcbId').value = wcb.id;
-        document.getElementById('wcbName').value = wcb.name;
-        document.getElementById('wcbType').value = wcb.type;
-        document.getElementById('wcbDescription').value = wcb.description || '';
-        
-        // Update file input hint
-        const fileRequired = document.getElementById('fileRequired');
-        const fileHint = document.getElementById('fileHint');
-        if (fileRequired) fileRequired.style.display = 'none';
-        if (fileHint) {
-            fileHint.textContent = 'Chọn file mới nếu muốn thay đổi';
-            fileHint.style.color = '#999';
-        }
-        
-        // Clear file input
-        const fileInput = form.querySelector('input[type="file"]');
-        if (fileInput) {
-            fileInput.value = '';
-        }
-        
-        // Hide preview
-        const filePreview = document.getElementById('filePreview');
-        if (filePreview) {
-            filePreview.style.display = 'none';
-        }
-        
-        // Show modal
-        modal.classList.add('active');
+    if (!wcb) {
+        alert('Không tìm thấy WCB!');
+        return;
     }
+    
+    // Create edit name modal
+    const modalHTML = `
+        <div id="editNameModal" class="edit-name-modal">
+            <div class="edit-name-content">
+                <div class="edit-name-header">
+                    <h2><i class="fas fa-edit"></i> Chỉnh sửa thông tin WCB</h2>
+                    <button class="modal-close" onclick="closeEditNameModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="edit-name-body">
+                    <div class="wcb-preview-info">
+                        ${wcb.type === 'image' ? `
+                            <img src="${escapeHtml(wcb.file_path)}" alt="${escapeHtml(wcb.name)}" class="preview-thumb">
+                        ` : `
+                            <div class="preview-thumb video">
+                                <i class="fas fa-video"></i>
+                            </div>
+                        `}
+                        <div class="preview-meta">
+                            <span class="type-badge ${wcb.type}">
+                                <i class="fas fa-${wcb.type === 'image' ? 'image' : 'video'}"></i>
+                                ${wcb.type === 'image' ? 'Hình ảnh' : 'Video'}
+                            </span>
+                            <span class="file-size">${wcb.file_size_formatted || ''}</span>
+                        </div>
+                    </div>
+                    
+                    <form id="editNameForm" onsubmit="saveWCBName(event, ${wcb.id})">
+                        <div class="form-group">
+                            <label for="editWcbName">Tên WCB *</label>
+                            <input type="text" 
+                                   id="editWcbName" 
+                                   value="${escapeHtml(wcb.name)}" 
+                                   required 
+                                   placeholder="Nhập tên WCB">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editWcbDescription">Mô tả</label>
+                            <textarea id="editWcbDescription" 
+                                      rows="3" 
+                                      placeholder="Nhập mô tả cho WCB...">${escapeHtml(wcb.description || '')}</textarea>
+                        </div>
+                        
+                        <div class="form-note">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Lưu ý: Chỉ có thể chỉnh sửa tên và mô tả. Không thể thay đổi file.</span>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="btn-cancel" onclick="closeEditNameModal()">
+                                <i class="fas fa-times"></i> Hủy
+                            </button>
+                            <button type="submit" class="btn-save">
+                                <i class="fas fa-save"></i> Lưu thay đổi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.body.style.overflow = 'hidden';
+}
+
+// Close edit name modal
+function closeEditNameModal() {
+    const modal = document.getElementById('editNameModal');
+    if (modal) {
+        modal.remove();
+    }
+    document.body.style.overflow = '';
+}
+
+// Save WCB name
+function saveWCBName(event, wcbId) {
+    event.preventDefault();
+    
+    const name = document.getElementById('editWcbName').value.trim();
+    const description = document.getElementById('editWcbDescription').value.trim();
+    
+    if (!name) {
+        alert('Vui lòng nhập tên WCB!');
+        return;
+    }
+    
+    // Show loading
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+    submitBtn.disabled = true;
+    
+    // Send update request
+    fetch('api/update-media-name.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            id: wcbId,
+            name: name,
+            description: description
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Cập nhật thành công!', 'success');
+            closeEditNameModal();
+            loadWCBList(); // Reload list
+        } else {
+            showNotification('Lỗi: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Có lỗi xảy ra khi cập nhật!', 'error');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
 }
 
 // Save WCB
@@ -271,17 +389,239 @@ function deleteWCB(id) {
 
 // Assign WCB to TV
 function assignWCB(id) {
-    // Open assign modal or redirect to assignment page
-    window.location.href = `assign-wcb.php?wcb=${id}`;
+    const wcb = wcbData.find(w => w.id == id);
+    if (!wcb) {
+        alert('Không tìm thấy WCB!');
+        return;
+    }
+    
+    showAssignModal(wcb);
 }
 
-// Preview WCB
+// Show assign modal
+function showAssignModal(wcb) {
+    console.log('Opening assign modal for WCB:', wcb);
+    
+    // Load TVs and current assignments
+    Promise.all([
+        fetch('api/get-tvs.php').then(r => r.json()),
+        fetch(`api/get-media-assignments.php?media_id=${wcb.id}`).then(r => r.json())
+    ])
+    .then(([tvsData, assignmentsData]) => {
+        console.log('TVs data:', tvsData);
+        console.log('Assignments data:', assignmentsData);
+        
+        const tvs = tvsData.tvs || [];
+        const assignments = assignmentsData.assignments || [];
+        const assignedTVIds = assignments.map(a => a.tv_id);
+        
+        console.log('Assigned TV IDs:', assignedTVIds);
+        
+        const modalHTML = `
+            <div id="assignModal" class="assign-modal">
+                <div class="assign-modal-content">
+                    <div class="assign-modal-header">
+                        <h2><i class="fas fa-tv"></i> Gán WCB cho TV</h2>
+                        <button class="modal-close" onclick="closeAssignModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="assign-modal-body">
+                        <div class="assign-wcb-info">
+                            <h3>${escapeHtml(wcb.name)}</h3>
+                            <p><i class="fas fa-${wcb.type === 'image' ? 'image' : 'video'}"></i> ${wcb.type.toUpperCase()}</p>
+                        </div>
+                        
+                        <div class="assign-current">
+                            <h4><i class="fas fa-check-circle"></i> Đang gán cho:</h4>
+                            ${assignments.length > 0 ? `
+                                <div class="current-assignments">
+                                    ${assignments.map(a => `
+                                        <div class="assignment-item">
+                                            <div class="assignment-info">
+                                                <strong>${escapeHtml(a.tv_name)}</strong>
+                                                <span>${escapeHtml(a.tv_location)}</span>
+                                                ${a.is_default ? '<span class="badge-default">Mặc định</span>' : ''}
+                                            </div>
+                                            <button class="btn-unassign" onclick="unassignMedia(${wcb.id}, ${a.tv_id}, '${escapeHtml(a.tv_name)}')">
+                                                <i class="fas fa-times"></i> Hủy gán
+                                            </button>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : '<p class="no-assignments">Chưa gán cho TV nào</p>'}
+                        </div>
+                        
+                        <div class="assign-new">
+                            <h4><i class="fas fa-plus-circle"></i> Gán cho TV mới:</h4>
+                            <div class="tv-list">
+                                ${tvs.map(tv => `
+                                    <label class="tv-checkbox ${assignedTVIds.includes(tv.id) ? 'disabled' : ''}">
+                                        <input type="checkbox" 
+                                               value="${tv.id}" 
+                                               ${assignedTVIds.includes(tv.id) ? 'disabled checked' : ''}
+                                               class="tv-select">
+                                        <div class="tv-item">
+                                            <div class="tv-item-info">
+                                                <strong>${escapeHtml(tv.name)}</strong>
+                                                <span>${escapeHtml(tv.location)}</span>
+                                            </div>
+                                            <span class="tv-status ${tv.status}">${tv.status === 'online' ? 'Online' : 'Offline'}</span>
+                                        </div>
+                                    </label>
+                                `).join('')}
+                            </div>
+                            
+                            <label class="set-default-checkbox">
+                                <input type="checkbox" id="setAsDefault">
+                                <span>Đặt làm nội dung mặc định cho TV được chọn</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="assign-modal-footer">
+                        <button class="btn-cancel" onclick="closeAssignModal()">
+                            <i class="fas fa-times"></i> Đóng
+                        </button>
+                        <button class="btn-assign" onclick="confirmAssign(${wcb.id})">
+                            <i class="fas fa-check"></i> Gán cho TV đã chọn
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi khi tải dữ liệu!');
+    });
+}
+
+// Close assign modal
+function closeAssignModal() {
+    const modal = document.getElementById('assignModal');
+    if (modal) {
+        modal.remove();
+    }
+    document.body.style.overflow = '';
+}
+
+// Confirm assign
+function confirmAssign(mediaId) {
+    const selectedTVs = Array.from(document.querySelectorAll('.tv-select:checked:not(:disabled)'))
+        .map(cb => parseInt(cb.value));
+    
+    console.log('Selected TVs:', selectedTVs);
+    
+    if (selectedTVs.length === 0) {
+        alert('Vui lòng chọn ít nhất 1 TV!');
+        return;
+    }
+    
+    const isDefault = document.getElementById('setAsDefault').checked ? 1 : 0;
+    
+    console.log('Is default:', isDefault);
+    
+    // Show loading
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang gán...';
+    btn.disabled = true;
+    
+    const payload = {
+        media_id: mediaId,
+        tv_ids: selectedTVs,
+        is_default: isDefault
+    };
+    
+    console.log('Sending payload:', payload);
+    
+    fetch('api/assign-media.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        
+        if (data.success) {
+            showNotification(data.message, 'success');
+            closeAssignModal();
+            loadWCBList(); // Reload to update assigned info
+        } else {
+            showNotification('Lỗi: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Có lỗi xảy ra khi gán!', 'error');
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+// Unassign media from TV
+function unassignMedia(mediaId, tvId, tvName) {
+    if (!confirm(`Bạn có chắc muốn hủy gán khỏi TV "${tvName}"?`)) {
+        return;
+    }
+    
+    fetch('api/unassign-media.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            media_id: mediaId,
+            tv_id: tvId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            // Reload modal
+            closeAssignModal();
+            setTimeout(() => {
+                const wcb = wcbData.find(w => w.id == mediaId);
+                if (wcb) showAssignModal(wcb);
+            }, 500);
+        } else {
+            showNotification('Lỗi: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Có lỗi xảy ra khi hủy gán!', 'error');
+    });
+}
+
+// Preview WCB - Open in new tab
 function previewWCB(id) {
     const wcb = wcbData.find(w => w.id == id);
-    if (!wcb) return;
+    if (!wcb) {
+        alert('Không tìm thấy WCB!');
+        return;
+    }
     
-    // Open preview in modal or new window
-    window.open(wcb.url, '_blank');
+    // Open file in new tab
+    if (wcb.file_path) {
+        window.open(wcb.file_path, '_blank');
+    } else {
+        alert('Không tìm thấy file!');
+    }
 }
 
 // Search WCB
@@ -352,4 +692,13 @@ function handleFileSelect(input) {
         fileHint.style.color = '#999';
         filePreview.style.display = 'none';
     }
+}
+
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }

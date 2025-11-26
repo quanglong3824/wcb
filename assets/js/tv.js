@@ -15,8 +15,10 @@ function loadTVs() {
     fetch('api/get-tvs.php')
         .then(response => response.json())
         .then(data => {
+            console.log('TV data received:', data);
             if (data.success) {
                 allTVs = data.tvs; // Store all TVs
+                console.log('Stored TVs:', allTVs);
                 displayTVs(allTVs);
             } else {
                 showError(data.message || 'Không thể tải dữ liệu TV');
@@ -63,67 +65,44 @@ function createTVCard(tv) {
         contentTypeText = 'Video';
     }
     
-    // Get content preview image
-    const previewImage = tv.current_content_path || tv.default_content_path;
-    const previewType = tv.current_content_type || tv.default_content_type;
-    
-    // Build preview HTML
+    // Build single large preview with assigned media
     let previewHTML = '';
-    if (previewImage && previewType === 'image') {
+    
+    if (tv.assigned_media && tv.assigned_media.length > 0) {
+        // Show first assigned media (default or first one)
+        const firstMedia = tv.assigned_media[0];
+        const mediaCount = tv.assigned_media.length;
+        
         previewHTML = `
-            <div class="tv-preview">
-                <img src="${escapeHtml(previewImage)}" alt="Preview" onerror="this.parentElement.innerHTML='<div class=\\'tv-preview-placeholder\\'><i class=\\'fas fa-image\\'></i><p>Không tải được hình</p></div>'">
-            </div>
-        `;
-    } else if (previewImage && previewType === 'video') {
-        previewHTML = `
-            <div class="tv-preview">
-                <video src="${escapeHtml(previewImage)}" muted></video>
-                <div class="tv-preview-overlay">
-                    <i class="fas fa-play-circle"></i>
+            <div class="tv-preview-large" onclick="showTVMediaModal(${tv.id})">
+                ${firstMedia.type === 'image' ? `
+                    <img src="${escapeHtml(firstMedia.file_path)}" alt="${escapeHtml(firstMedia.name)}" 
+                         onerror="this.src='assets/img/no-image.png'">
+                ` : `
+                    <div class="video-preview-large">
+                        <i class="fas fa-play-circle"></i>
+                        <span>Video</span>
+                    </div>
+                `}
+                <div class="preview-overlay">
+                    <div class="preview-info">
+                        <span class="preview-name">${escapeHtml(firstMedia.name)}</span>
+                        ${firstMedia.is_default ? '<span class="preview-badge">Mặc định</span>' : ''}
+                    </div>
+                    ${mediaCount > 1 ? `
+                        <div class="preview-count">
+                            <i class="fas fa-images"></i> +${mediaCount - 1} WCB khác
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;
     } else {
         previewHTML = `
-            <div class="tv-preview">
+            <div class="tv-preview-large empty">
                 <div class="tv-preview-placeholder">
                     <i class="fas fa-tv"></i>
-                    <p>Chưa có nội dung</p>
-                </div>
-            </div>
-        `;
-    }
-    
-    // Build playing content HTML
-    let playingContentHTML = '';
-    if (tv.current_content_id && tv.current_content_name) {
-        playingContentHTML = `
-            <div class="tv-playing">
-                <div class="tv-playing-header">
-                    <i class="fas fa-play-circle"></i>
-                    Đang trình chiếu
-                </div>
-                <div class="tv-playing-content">
-                    <div class="tv-playing-icon">
-                        <i class="${contentIcon}"></i>
-                    </div>
-                    <div class="tv-playing-info">
-                        <div class="tv-playing-name">${escapeHtml(tv.current_content_name)}</div>
-                        <div class="tv-playing-type">
-                            <i class="${contentIcon}"></i>
-                            ${contentTypeText}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    } else {
-        playingContentHTML = `
-            <div class="tv-playing">
-                <div class="tv-no-content">
-                    <i class="fas fa-ban"></i>
-                    Không trình chiếu
+                    <p>Chưa gán WCB</p>
                 </div>
             </div>
         `;
@@ -156,13 +135,19 @@ function createTVCard(tv) {
                 </div>
                 
                 ${tv.description ? `
-                    <div class="tv-content-preview">
-                        <p><strong>Mô tả:</strong> ${escapeHtml(tv.description)}</p>
+                    <div class="tv-detail-row">
+                        <span class="tv-detail-label">Mô tả:</span>
+                        <span class="tv-detail-value">${escapeHtml(tv.description)}</span>
+                    </div>
+                ` : ''}
+                
+                ${tv.assigned_media && tv.assigned_media.length > 0 ? `
+                    <div class="tv-detail-row">
+                        <span class="tv-detail-label">WCB đã gán:</span>
+                        <span class="tv-detail-value">${tv.assigned_media_count} file</span>
                     </div>
                 ` : ''}
             </div>
-            
-            ${playingContentHTML}
             
             <div class="tv-card-actions">
                 <button class="btn-tv-action btn-view" onclick="viewTV(${tv.id})">
@@ -176,22 +161,39 @@ function createTVCard(tv) {
     `;
 }
 
-// View TV (open in new tab)
+// View TV (open in new tab with fullscreen)
 function viewTV(tvId) {
-    // TODO: Get TV folder from data
-    const tvFolders = {
-        1: 'basement',
-        2: 'chrysan',
-        3: 'jasmine',
-        4: 'lotus',
-        5: 'restaurant',
-        6: 'fo/tv1',
-        7: 'fo/tv2'
-    };
+    const tv = allTVs.find(t => t.id == tvId);
+    if (!tv || !tv.folder) {
+        alert('Không tìm thấy thông tin TV!');
+        return;
+    }
     
-    const folder = tvFolders[tvId];
-    if (folder) {
-        window.open(folder + '/index.php', '_blank');
+    // Open TV display in new window
+    const url = tv.folder + '/index.php';
+    const newWindow = window.open(url, '_blank', 'width=1920,height=1080');
+    
+    // Try to make it fullscreen after a short delay
+    if (newWindow) {
+        setTimeout(() => {
+            try {
+                // Request fullscreen on the new window's document
+                if (newWindow.document.documentElement.requestFullscreen) {
+                    newWindow.document.documentElement.requestFullscreen();
+                } else if (newWindow.document.documentElement.webkitRequestFullscreen) {
+                    newWindow.document.documentElement.webkitRequestFullscreen();
+                } else if (newWindow.document.documentElement.mozRequestFullScreen) {
+                    newWindow.document.documentElement.mozRequestFullScreen();
+                } else if (newWindow.document.documentElement.msRequestFullscreen) {
+                    newWindow.document.documentElement.msRequestFullscreen();
+                }
+            } catch (e) {
+                console.log('Fullscreen request failed:', e);
+                // Fallback: maximize window
+                newWindow.moveTo(0, 0);
+                newWindow.resizeTo(screen.width, screen.height);
+            }
+        }, 1000);
     }
 }
 
@@ -410,4 +412,93 @@ function refreshTVs() {
     
     // Reload data
     loadTVs();
+}
+
+
+// Show TV media modal
+function showTVMediaModal(tvId) {
+    console.log('Opening modal for TV ID:', tvId);
+    console.log('All TVs:', allTVs);
+    
+    const tv = allTVs.find(t => t.id == tvId);
+    console.log('Found TV:', tv);
+    
+    if (!tv) {
+        alert('Không tìm thấy TV!');
+        return;
+    }
+    
+    console.log('TV assigned media:', tv.assigned_media);
+    
+    const modalHTML = `
+        <div id="tvMediaModal" class="tv-media-modal">
+            <div class="tv-media-modal-content">
+                <div class="tv-media-modal-header">
+                    <div class="modal-header-info">
+                        <h2><i class="fas fa-tv"></i> ${escapeHtml(tv.name)}</h2>
+                        <p>${escapeHtml(tv.location)}</p>
+                    </div>
+                    <button class="modal-close" onclick="closeTVMediaModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="tv-media-modal-body">
+                    ${tv.assigned_media && tv.assigned_media.length > 0 ? `
+                        <div class="media-grid">
+                            ${tv.assigned_media.map(media => `
+                                <div class="media-grid-item ${media.is_default ? 'is-default' : ''}" 
+                                     onclick="viewMediaInNewTab('${escapeHtml(media.file_path)}')">
+                                    <div class="media-grid-thumb">
+                                        ${media.type === 'image' ? `
+                                            <img src="${escapeHtml(media.file_path)}" alt="${escapeHtml(media.name)}" 
+                                                 onerror="this.src='assets/img/no-image.png'">
+                                        ` : `
+                                            <div class="video-thumb-grid">
+                                                <i class="fas fa-play-circle"></i>
+                                            </div>
+                                        `}
+                                        ${media.is_default ? '<span class="default-badge-grid">Mặc định</span>' : ''}
+                                    </div>
+                                    <div class="media-grid-info">
+                                        <div class="media-grid-name" title="${escapeHtml(media.name)}">
+                                            ${escapeHtml(media.name)}
+                                        </div>
+                                        <div class="media-grid-type">
+                                            <i class="fas fa-${media.type === 'image' ? 'image' : 'video'}"></i>
+                                            ${media.type === 'image' ? 'Hình ảnh' : 'Video'}
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : `
+                        <div class="no-media-message">
+                            <i class="fas fa-inbox"></i>
+                            <p>TV này chưa có WCB nào được gán</p>
+                        </div>
+                    `}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.body.style.overflow = 'hidden';
+}
+
+// Close TV media modal
+function closeTVMediaModal() {
+    const modal = document.getElementById('tvMediaModal');
+    if (modal) {
+        modal.remove();
+    }
+    document.body.style.overflow = '';
+}
+
+// View media in new tab
+function viewMediaInNewTab(filePath) {
+    if (filePath) {
+        window.open(filePath, '_blank');
+    }
 }
