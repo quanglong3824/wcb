@@ -1,11 +1,6 @@
 <?php
-session_start();
+require_once 'includes/auth-check.php';
 require_once 'config/php/config.php';
-
-// Kiểm tra đăng nhập
-if (!isLoggedIn()) {
-    redirect('auth/login.php');
-}
 
 // Lấy thông tin user từ database
 $conn = getDBConnection();

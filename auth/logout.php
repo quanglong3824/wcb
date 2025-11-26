@@ -32,15 +32,34 @@ if (isset($_SESSION['user_id'])) {
     }
 }
 
-// Xóa tất cả session
-$_SESSION = array();
+// Xóa tất cả session variables
+$_SESSION = [];
 
 // Xóa session cookie
 if (isset($_COOKIE[session_name()])) {
-    setcookie(session_name(), '', time() - 3600, '/');
+    $params = session_get_cookie_params();
+    setcookie(
+        session_name(),
+        '',
+        time() - 3600,
+        $params['path'],
+        $params['domain'],
+        $params['secure'],
+        $params['httponly']
+    );
 }
 
-// Hủy session
+// Hủy session hoàn toàn
+session_destroy();
+
+// Xóa các cookie remember me nếu có
+if (isset($_COOKIE['remember_token'])) {
+    setcookie('remember_token', '', time() - 3600, '/');
+}
+
+// Regenerate session ID để bảo mật
+session_start();
+session_regenerate_id(true);
 session_destroy();
 
 // Redirect về trang login

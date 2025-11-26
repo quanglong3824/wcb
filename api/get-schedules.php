@@ -1,14 +1,8 @@
 <?php
-session_start();
+require_once '../includes/auth-check.php';
 require_once '../config/php/config.php';
 
 header('Content-Type: application/json');
-
-// Kiểm tra đăng nhập
-if (!isLoggedIn()) {
-    echo json_encode(['error' => 'Unauthorized']);
-    exit;
-}
 
 // TODO: Lấy dữ liệu từ database
 // $conn = getDBConnection();

@@ -1,14 +1,8 @@
 <?php
-session_start();
+require_once '../includes/auth-check.php';
 require_once '../config/php/config.php';
 
 header('Content-Type: application/json');
-
-// Kiểm tra đăng nhập
-if (!isLoggedIn()) {
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-    exit;
-}
 
 // Lấy dữ liệu 7 TV từ database với thông tin nội dung đang chiếu
 $conn = getDBConnection();

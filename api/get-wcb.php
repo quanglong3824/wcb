@@ -1,14 +1,8 @@
 <?php
-session_start();
+require_once '../includes/auth-check.php';
 require_once '../config/php/config.php';
 
 header('Content-Type: application/json');
-
-// Kiểm tra đăng nhập
-if (!isLoggedIn()) {
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-    exit;
-}
 
 // Lấy dữ liệu từ database
 $conn = getDBConnection();
@@ -31,6 +25,7 @@ $query = "SELECT
           LEFT JOIN users u ON m.uploaded_by = u.id
           LEFT JOIN tv_media_assignments tma ON m.id = tma.media_id
           LEFT JOIN tvs t ON tma.tv_id = t.id
+          WHERE m.status = 'active'
           GROUP BY m.id
           ORDER BY m.created_at DESC";
 

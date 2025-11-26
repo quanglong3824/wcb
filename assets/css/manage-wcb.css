@@ -304,3 +304,80 @@
         justify-content: center;
     }
 }
+
+/* Notification Styles */
+.notification {
+    position: fixed;
+    top: -100px;
+    right: 20px;
+    background: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 10000;
+    transition: all 0.3s ease;
+    min-width: 300px;
+}
+
+.notification.show {
+    top: 20px;
+}
+
+.notification-success {
+    border-left: 4px solid #10b981;
+}
+
+.notification-success i {
+    color: #10b981;
+    font-size: 1.5em;
+}
+
+.notification-error {
+    border-left: 4px solid #ef4444;
+}
+
+.notification-error i {
+    color: #ef4444;
+    font-size: 1.5em;
+}
+
+.notification span {
+    flex: 1;
+    color: #333;
+    font-weight: 500;
+}
+
+/* File Input Improvements */
+input[type="file"] {
+    padding: 10px;
+    border: 2px dashed #d4af37;
+    border-radius: 8px;
+    background: #f9f9f9;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+input[type="file"]:hover {
+    border-color: #5568d3;
+    background: #f0f0f0;
+}
+
+input[type="file"]:focus {
+    outline: none;
+    border-color: #5568d3;
+    box-shadow: 0 0 0 3px rgba(85, 104, 211, 0.1);
+}
+
+#filePreview {
+    text-align: center;
+    padding: 10px;
+    background: #f9f9f9;
+    border-radius: 8px;
+}
+
+#previewImage {
+    border: 2px solid #e0e0e0;
+}

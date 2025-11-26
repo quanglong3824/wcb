@@ -73,11 +73,24 @@ function displayWCBList(wcbs) {
 // Open add WCB modal
 function openAddWCBModal() {
     const modal = document.getElementById('wcbModal');
-    if (modal) {
-        modal.classList.add('active');
-        document.getElementById('wcbForm').reset();
+    const form = document.getElementById('wcbForm');
+    
+    if (modal && form) {
+        // Reset form first
+        form.reset();
+        
+        // Clear hidden fields
         document.getElementById('wcbId').value = '';
         document.getElementById('modalTitle').textContent = 'Thêm WCB mới';
+        
+        // Clear file input explicitly
+        const fileInput = form.querySelector('input[type="file"]');
+        if (fileInput) {
+            fileInput.value = '';
+        }
+        
+        // Show modal
+        modal.classList.add('active');
     }
 }
 
@@ -86,7 +99,45 @@ function closeModal() {
     const modal = document.getElementById('wcbModal');
     if (modal) {
         modal.classList.remove('active');
+        
+        // Reset form
+        const form = document.getElementById('wcbForm');
+        if (form) {
+            form.reset();
+        }
     }
+}
+
+// Show notification
+function showNotification(message, type = 'info') {
+    // Remove existing notifications
+    const existing = document.querySelector('.notification');
+    if (existing) {
+        existing.remove();
+    }
+    
+    // Create notification
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        <span>${message}</span>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Show notification
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 10);
+    
+    // Auto hide after 3 seconds
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }, 3000);
 }
 
 // Edit WCB
@@ -95,42 +146,101 @@ function editWCB(id) {
     if (!wcb) return;
     
     const modal = document.getElementById('wcbModal');
-    if (modal) {
-        modal.classList.add('active');
+    const form = document.getElementById('wcbForm');
+    
+    if (modal && form) {
+        // Reset form first
+        form.reset();
+        
+        // Fill form with data
         document.getElementById('modalTitle').textContent = 'Chỉnh sửa WCB';
         document.getElementById('wcbId').value = wcb.id;
         document.getElementById('wcbName').value = wcb.name;
         document.getElementById('wcbType').value = wcb.type;
         document.getElementById('wcbDescription').value = wcb.description || '';
+        
+        // Update file input hint
+        const fileRequired = document.getElementById('fileRequired');
+        const fileHint = document.getElementById('fileHint');
+        if (fileRequired) fileRequired.style.display = 'none';
+        if (fileHint) {
+            fileHint.textContent = 'Chọn file mới nếu muốn thay đổi';
+            fileHint.style.color = '#999';
+        }
+        
+        // Clear file input
+        const fileInput = form.querySelector('input[type="file"]');
+        if (fileInput) {
+            fileInput.value = '';
+        }
+        
+        // Hide preview
+        const filePreview = document.getElementById('filePreview');
+        if (filePreview) {
+            filePreview.style.display = 'none';
+        }
+        
+        // Show modal
+        modal.classList.add('active');
     }
 }
 
 // Save WCB
 function saveWCB(event) {
     event.preventDefault();
+    event.stopPropagation();
     
-    const formData = new FormData(event.target);
-    const id = formData.get('wcbId');
+    const form = event.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const fileInput = form.querySelector('input[type="file"]');
+    
+    // Validate file input for new WCB
+    const id = form.querySelector('#wcbId').value;
+    if (!id && (!fileInput.files || fileInput.files.length === 0)) {
+        alert('Vui lòng chọn file!');
+        return false;
+    }
+    
+    // Disable submit button to prevent double submission
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+    
+    const formData = new FormData(form);
     const url = id ? 'api/update-wcb.php' : 'api/create-wcb.php';
     
     fetch(url, {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             closeModal();
             loadWCBList();
-            alert('Lưu thành công!');
+            showNotification('Lưu thành công!', 'success');
+            
+            // Reset form
+            form.reset();
         } else {
-            alert('Lỗi: ' + data.message);
+            showNotification('Lỗi: ' + (data.message || 'Không thể lưu'), 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Có lỗi xảy ra khi lưu');
+        showNotification('Có lỗi xảy ra khi lưu: ' + error.message, 'error');
+    })
+    .finally(() => {
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-save"></i> Lưu';
     });
+    
+    return false;
 }
 
 // Delete WCB
@@ -208,5 +318,38 @@ window.onclick = function(event) {
     const modal = document.getElementById('wcbModal');
     if (event.target === modal) {
         closeModal();
+    }
+}
+
+
+// Handle file select
+function handleFileSelect(input) {
+    const filePreview = document.getElementById('filePreview');
+    const previewImage = document.getElementById('previewImage');
+    const fileHint = document.getElementById('fileHint');
+    
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
+        
+        // Update hint
+        fileHint.textContent = `Đã chọn: ${file.name} (${fileSize} MB)`;
+        fileHint.style.color = '#10b981';
+        
+        // Show preview for images
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImage.src = e.target.result;
+                filePreview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            filePreview.style.display = 'none';
+        }
+    } else {
+        fileHint.textContent = 'Chọn file hình ảnh hoặc video';
+        fileHint.style.color = '#999';
+        filePreview.style.display = 'none';
     }
 }

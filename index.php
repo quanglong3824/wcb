@@ -1,17 +1,9 @@
 <?php
-session_start();
+// Authentication check - Must be first
+require_once 'includes/auth-check.php';
 
 // Xác định base path
 $basePath = './';
-
-// Kiểm tra xem người dùng đã đăng nhập chưa
-$isLoggedIn = isset($_SESSION['user_id']);
-
-// Nếu chưa đăng nhập, chuyển đến trang login
-if (!$isLoggedIn) {
-    header('Location: auth/login.php');
-    exit;
-}
 
 // Set page title
 $pageTitle = 'Dashboard - Welcome Board System';

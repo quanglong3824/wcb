@@ -1,12 +1,6 @@
 <?php
-session_start();
+require_once '../includes/auth-check.php';
 require_once '../config/php/config.php';
-
-// Kiểm tra đăng nhập
-if (!isLoggedIn()) {
-    header('Location: ../auth/login.php');
-    exit;
-}
 
 // Kiểm tra request method
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

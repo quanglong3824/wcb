@@ -1,14 +1,10 @@
 <?php
 session_start();
 
-// DEMO LOGIN - Bỏ comment để đăng nhập giả (không cần database)
-if (isset($_GET['demo'])) {
-    $_SESSION['user_id'] = 999;
-    $_SESSION['username'] = 'demo';
-    $_SESSION['full_name'] = 'Demo User';
-    $_SESSION['user_role'] = 'super_admin';
-    $_SESSION['user_email'] = 'demo@example.com';
-    header('Location: ../index.php');
+// Check if system is installed
+$lockFile = dirname(__DIR__) . '/.installed';
+if (!file_exists($lockFile)) {
+    header('Location: ../install.php');
     exit;
 }
 
@@ -70,6 +66,11 @@ if (isset($_SESSION['user_id'])) {
                         <i class="fas fa-info-circle"></i>
                         Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.
                     </p>
+                <?php elseif (isset($_GET['password_reset'])): ?>
+                    <p class="message message-success">
+                        <i class="fas fa-check-circle"></i>
+                        Đặt lại mật khẩu thành công! Vui lòng đăng nhập với mật khẩu mới.
+                    </p>
                 <?php endif; ?>
             </div>
             
@@ -104,7 +105,7 @@ if (isset($_SESSION['user_id'])) {
                         <input type="checkbox" name="remember" id="remember">
                         <span>Ghi nhớ đăng nhập</span>
                     </label>
-                    <a href="#" class="forgot-password">Quên mật khẩu?</a>
+                    <a href="forgot-password.php" class="forgot-password">Quên mật khẩu?</a>
                 </div>
                 
                 <button type="submit" class="btn-login">
@@ -118,7 +119,7 @@ if (isset($_SESSION['user_id'])) {
             <p>
                 Tài khoản mặc định: <strong>admin</strong> / <strong>admin123</strong><br>
                 <a href="../check-database.php">Kiểm tra kết nối database</a> | 
-                <a href="?demo=1" style="color: #ef4444;">Demo Login (Không cần DB)</a>
+                <a href="../install.php">Cài đặt lại hệ thống</a>
             </p>
         </div>
     </div>

@@ -1,14 +1,8 @@
 <?php
-session_start();
+require_once '../includes/auth-check.php';
 require_once '../config/php/config.php';
 
 header('Content-Type: application/json');
-
-// Kiểm tra đăng nhập
-if (!isLoggedIn()) {
-    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-    exit;
-}
 
 // Kiểm tra file upload
 if (!isset($_FILES['file'])) {

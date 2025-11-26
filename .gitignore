@@ -1,43 +1,29 @@
-# Database Configuration
+# Installation lock file
+.installed
+
+# Uploads folder
+uploads/*
+!uploads/.gitkeep
+
+# Config files with sensitive data
 config/php/database.php
 
-# Uploads
-uploads/*
-!uploads/.htaccess
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
 
 # Logs
 *.log
 error_log
 
-# OS Files
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# IDE
-.vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
-
 # Temporary files
 *.tmp
-*.temp
-*.swp
-*.swo
-*~
-
-# Cache
-cache/
-tmp/
-
-# Environment
-.env
-.env.local
-.env.production
-
-# Backup files
 *.bak
-*.backup
-*.sql.gz
-backup/
+*.cache

@@ -1,13 +1,9 @@
 <?php
-session_start();
+// Include auth check
+require_once '../includes/auth-check.php';
 
 // Include config
 require_once '../config/php/config.php';
-
-// Kiểm tra đăng nhập
-if (!isLoggedIn()) {
-    redirect('../auth/login.php');
-}
 
 // Xác định base path
 $basePath = '../';

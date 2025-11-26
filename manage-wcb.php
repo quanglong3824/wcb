@@ -1,11 +1,6 @@
 <?php
-session_start();
+require_once 'includes/auth-check.php';
 require_once 'config/php/config.php';
-
-// Kiểm tra đăng nhập
-if (!isLoggedIn()) {
-    redirect('auth/login.php');
-}
 
 // Xác định base path
 $basePath = './';
@@ -107,9 +102,12 @@ include 'includes/sidebar.php';
                 </div>
                 
                 <div class="form-group">
-                    <label>File *</label>
-                    <input type="file" name="wcbFile" accept="image/*,video/*">
-                    <small style="color: #999;">Chọn file mới nếu muốn thay đổi</small>
+                    <label>File <span id="fileRequired">*</span></label>
+                    <input type="file" id="wcbFile" name="wcbFile" accept="image/*,video/*" onchange="handleFileSelect(this)">
+                    <small id="fileHint" style="color: #999;">Chọn file hình ảnh hoặc video</small>
+                    <div id="filePreview" style="margin-top: 10px; display: none;">
+                        <img id="previewImage" style="max-width: 200px; max-height: 150px; border-radius: 8px;">
+                    </div>
                 </div>
                 
                 <div class="form-group">
