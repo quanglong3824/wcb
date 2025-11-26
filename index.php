@@ -1,60 +1,113 @@
 <?php
-// Redirect to admin.php as default
-header('Location: admin.php');
-exit;
+session_start();
+
+// Xác định base path
+$basePath = './';
+
+// Kiểm tra xem người dùng đã đăng nhập chưa
+$isLoggedIn = isset($_SESSION['user_id']);
+
+// Nếu chưa đăng nhập, chuyển đến trang login
+if (!$isLoggedIn) {
+    header('Location: auth/login.php');
+    exit;
+}
+
+// Set page title
+$pageTitle = 'Dashboard - Welcome Board System';
+
+// Include header
+include 'includes/header.php';
+
+// Include sidebar
+include 'includes/sidebar.php';
+
+// Thống kê mẫu (sau này sẽ lấy từ database)
+$stats = [
+    [
+        'icon' => 'fas fa-tv',
+        'value' => '12',
+        'label' => 'Tổng số TV',
+        'color' => 'blue'
+    ],
+    [
+        'icon' => 'fas fa-check-circle',
+        'value' => '10',
+        'label' => 'TV đang hoạt động',
+        'color' => 'green'
+    ],
+    [
+        'icon' => 'fas fa-images',
+        'value' => '45',
+        'label' => 'Nội dung WCB',
+        'color' => 'orange'
+    ],
+    [
+        'icon' => 'fas fa-calendar-check',
+        'value' => '8',
+        'label' => 'Lịch chiếu hôm nay',
+        'color' => 'purple'
+    ]
+];
 ?>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome Board Management System</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>Hệ thống Welcome Board</h1>
-            <nav>
-                <a href="#business" class="nav-btn">Phòng Kinh Doanh</a>
-                <a href="admin.php" class="nav-btn">Admin</a>
-                <a href="display.php" target="_blank" class="nav-btn display-btn">Chiếu màn hình</a>
-                <a href="test_auto_update.php" target="_blank" class="nav-btn" style="background: #9b59b6;">Test Auto Update</a>
-            </nav>
-        </header>
 
-        <!-- Phần Upload cho Phòng Kinh Doanh -->
-        <section id="business" class="panel">
-            <h2>Phòng Kinh Doanh - Upload Welcome Board</h2>
-            
-            <?php if (isset($_GET['upload_success'])): ?>
-                <div class="alert success">Upload thành công! Welcome Board đã sẵn sàng.</div>
-            <?php endif; ?>
-            
-            <?php if (isset($_GET['upload_error'])): ?>
-                <div class="alert error"><?php echo htmlspecialchars($_GET['upload_error']); ?></div>
-            <?php endif; ?>
-
-            <form action="upload.php" method="POST" enctype="multipart/form-data" class="upload-form">
-                <div class="form-group">
-                    <label for="event_date">Ngày hội thảo</label>
-                    <input type="date" id="event_date" name="event_date" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="event_title">Tiêu đề sự kiện</label>
-                    <input type="text" id="event_title" name="event_title" placeholder="Nhập tên sự kiện..." required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="welcome_image">Hình ảnh Welcome Board</label>
-                    <input type="file" id="welcome_image" name="welcome_image" accept="image/*" required>
-                    <small class="note">Yêu cầu: Ảnh nằm ngang, tối đa 2K (1920x1080 khuyến nghị)</small>
-                </div>
-                
-                <button type="submit" class="btn-primary">Upload Welcome Board</button>
-            </form>
-        </section>
+<!-- Main Content -->
+<main class="main-content">
+    <div class="page-header">
+        <h1>Dashboard</h1>
+        <p>Chào mừng đến với hệ thống quản lý Welcome Board</p>
     </div>
-</body>
-</html>
+
+    <!-- Statistics Cards -->
+    <div class="dashboard-grid">
+        <?php foreach ($stats as $stat): ?>
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-card-icon <?php echo $stat['color']; ?>">
+                        <i class="<?php echo $stat['icon']; ?>"></i>
+                    </div>
+                </div>
+                <div class="stat-card-value"><?php echo $stat['value']; ?></div>
+                <div class="stat-card-label"><?php echo $stat['label']; ?></div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="dashboard-grid">
+        <div class="stat-card">
+            <h3 style="margin-bottom: 15px; color: #667eea;">
+                <i class="fas fa-tv"></i> Quản lý TV
+            </h3>
+            <p style="color: #666; margin-bottom: 15px;">Giám sát và điều khiển các màn hình TV</p>
+            <a href="admin/index.php?page=tv" style="color: #667eea; text-decoration: none;">
+                Xem chi tiết <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+
+        <div class="stat-card">
+            <h3 style="margin-bottom: 15px; color: #4caf50;">
+                <i class="fas fa-image"></i> Quản lý WCB
+            </h3>
+            <p style="color: #666; margin-bottom: 15px;">Tải lên và quản lý nội dung hiển thị</p>
+            <a href="manage-wcb.php" style="color: #4caf50; text-decoration: none;">
+                Xem chi tiết <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+
+        <div class="stat-card">
+            <h3 style="margin-bottom: 15px; color: #ff9800;">
+                <i class="fas fa-calendar-alt"></i> Lịch chiếu
+            </h3>
+            <p style="color: #666; margin-bottom: 15px;">Lên lịch hiển thị nội dung tự động</p>
+            <a href="admin/index.php?page=schedule" style="color: #ff9800; text-decoration: none;">
+                Xem chi tiết <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+</main>
+
+<?php
+// Include footer
+include 'includes/footer.php';
+?>
