@@ -4,6 +4,13 @@
  * Welcome Board System - Quang Long Hotel
  */
 
+// Session Configuration (phải đặt TRƯỚC session_start())
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_only_cookies', 1);
+    ini_set('session.cookie_secure', 0); // Set to 1 if using HTTPS
+}
+
 // Timezone
 date_default_timezone_set('Asia/Ho_Chi_Minh');
 
@@ -17,11 +24,6 @@ define('ASSETS_PATH', ROOT_PATH . 'assets/');
 
 // Database Configuration (from database.php)
 require_once __DIR__ . '/database.php';
-
-// Session Configuration
-ini_set('session.cookie_httponly', 1);
-ini_set('session.use_only_cookies', 1);
-ini_set('session.cookie_secure', 0); // Set to 1 if using HTTPS
 
 // Error Reporting (Development)
 error_reporting(E_ALL);

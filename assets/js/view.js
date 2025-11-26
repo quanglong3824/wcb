@@ -75,7 +75,10 @@ function displayTVMonitors(tvs) {
 // Get TV screen content HTML
 function getTVScreenContent(tv) {
     if (!tv.currentContent) {
-        return '<i class="fas fa-tv"></i>';
+        return `
+            <i class="fas fa-tv"></i>
+            <div class="no-content-text">Không trình chiếu</div>
+        `;
     }
     
     if (tv.contentType === 'image') {
@@ -83,7 +86,10 @@ function getTVScreenContent(tv) {
     } else if (tv.contentType === 'video') {
         return `<video src="${tv.contentUrl}" autoplay muted loop></video>`;
     } else {
-        return '<i class="fas fa-tv"></i>';
+        return `
+            <i class="fas fa-tv"></i>
+            <div class="no-content-text">Không trình chiếu</div>
+        `;
     }
 }
 

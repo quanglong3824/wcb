@@ -49,7 +49,11 @@ function displayGridView(tvs) {
     container.innerHTML = tvs.map(tv => `
         <div class="tv-card">
             <div class="tv-card-screen ${tv.currentContent ? '' : 'no-signal'}">
-                ${tv.currentContent ? `<img src="${tv.contentUrl}" alt="${tv.name}">` : '<i class="fas fa-tv"></i>'}
+                ${tv.currentContent ? 
+                    `<img src="${tv.contentUrl}" alt="${tv.name}">` : 
+                    `<i class="fas fa-tv"></i>
+                     <div class="no-content-text">Không trình chiếu</div>`
+                }
                 <div class="tv-card-badge ${tv.status}">
                     ${tv.status === 'online' ? 'Online' : 'Offline'}
                 </div>

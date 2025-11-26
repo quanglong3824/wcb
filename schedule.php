@@ -44,6 +44,8 @@ include 'includes/sidebar.php';
                 <option value="3">TV Jasmine</option>
                 <option value="4">TV Lotus</option>
                 <option value="5">TV Restaurant</option>
+                <option value="6">TV FO 1</option>
+                <option value="7">TV FO 2</option>
             </select>
             
             <select onchange="filterByScheduleStatus(this.value)">
@@ -101,6 +103,8 @@ include 'includes/sidebar.php';
                         <option value="3">TV Jasmine</option>
                         <option value="4">TV Lotus</option>
                         <option value="5">TV Restaurant</option>
+                        <option value="6">TV FO 1</option>
+                        <option value="7">TV FO 2</option>
                     </select>
                 </div>
                 

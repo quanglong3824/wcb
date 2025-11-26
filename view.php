@@ -40,9 +40,11 @@ include 'includes/sidebar.php';
             <select onchange="filterByLocation(this.value)">
                 <option value="all">Tất cả vị trí</option>
                 <option value="Tầng hầm">Tầng hầm</option>
-                <option value="Tầng 1">Tầng 1</option>
-                <option value="Tầng 2">Tầng 2</option>
+                <option value="Phòng Chrysan">Phòng Chrysan</option>
+                <option value="Phòng Jasmine">Phòng Jasmine</option>
+                <option value="Phòng Lotus">Phòng Lotus</option>
                 <option value="Nhà hàng">Nhà hàng</option>
+                <option value="Lễ tân">Lễ tân</option>
             </select>
             
             <select onchange="filterByStatus(this.value)">

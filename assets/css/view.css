@@ -79,12 +79,23 @@
 }
 
 .tv-screen.no-content {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
 }
 
 .tv-screen.no-content i {
     font-size: 3em;
-    color: rgba(255,255,255,0.3);
+    color: rgba(255,255,255,0.2);
+}
+
+.tv-screen.no-content .no-content-text {
+    color: rgba(255,255,255,0.5);
+    font-size: 0.95em;
+    text-align: center;
 }
 
 .tv-status-badge {
