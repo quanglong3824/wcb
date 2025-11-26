@@ -101,7 +101,7 @@
 - ⬜ Filter schedules
 - ⬜ Pagination
  
-**Assigned to**:Nguyễn Anh Vàng
+**Assigned to**:--
 
 ---
 
