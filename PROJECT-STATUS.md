@@ -73,9 +73,8 @@
 - ⬜ Trang Profile cá nhân
 - ⬜ Trang 404 Not Found
 - ⬜ Footer với thông tin bản quyền
-
-**Ước tính**: 8-10 ngày  
-**Assigned to**: _Chưa phân công_
+  
+**Assigned to**: Nguyễn Anh Vàng
 
 ---
 
@@ -101,9 +100,8 @@
 - ⬜ Search media
 - ⬜ Filter schedules
 - ⬜ Pagination
-
-**Ước tính**: 30-35 ngày  
-**Assigned to**: _Chưa phân công_
+ 
+**Assigned to**:Nguyễn Anh Vàng
 
 ---
 
@@ -118,8 +116,7 @@
 - ⬜ Media Library Management
 - ⬜ Settings Management
 - ⬜ Notification System
-
-**Ước tính**: 50-60 ngày  
+ 
 **Assigned to**: _Chưa phân công_
 
 ---
@@ -138,7 +135,7 @@
 - ⬜ Mobile App Integration
 - ⬜ DevOps & CI/CD
 
-**Ước tính**: 100-120 ngày  
+
 **Assigned to**: _Chưa phân công_
 
 ---
