@@ -142,11 +142,31 @@ function updateTVStatus(tvDetails) {
         return;
     }
     
-    grid.innerHTML = tvDetails.map(tv => `
-        <div class="tv-status-item ${tv.status}">
+    grid.innerHTML = tvDetails.map(tv => {
+        // Determine detailed status
+        let statusClass, statusText, statusIcon;
+        
+        if (tv.status === 'offline') {
+            statusClass = 'standby';
+            statusText = 'Standby';
+            statusIcon = 'fa-moon';
+        } else if (tv.status === 'online' && tv.current_content_name) {
+            statusClass = 'playing';
+            statusText = 'Playing';
+            statusIcon = 'fa-play-circle';
+        } else {
+            statusClass = 'online';
+            statusText = 'Online';
+            statusIcon = 'fa-check-circle';
+        }
+        
+        return `
+        <div class="tv-status-item ${statusClass}">
             <div class="tv-status-header">
                 <i class="fas fa-tv"></i>
-                <span class="tv-status-badge ${tv.status}">${tv.status === 'online' ? 'Online' : 'Offline'}</span>
+                <span class="tv-status-badge ${statusClass}">
+                    <i class="fas ${statusIcon}"></i> ${statusText}
+                </span>
             </div>
             <h4>${escapeHtml(tv.name)}</h4>
             <p class="tv-location">${escapeHtml(tv.location)}</p>
@@ -160,7 +180,7 @@ function updateTVStatus(tvDetails) {
                 <i class="fas fa-clock"></i> ${tv.last_heartbeat_formatted}
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
 function getActionBadge(action) {

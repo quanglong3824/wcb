@@ -1,31 +1,44 @@
 <?php
-require_once '../includes/auth-check.php';
 require_once '../config/php/config.php';
 
 header('Content-Type: application/json');
 
-// TODO: Lấy dữ liệu từ database với view
-// $conn = getDBConnection();
-// $query = "SELECT * FROM view_tv_status ORDER BY id ASC";
-// $result = $conn->query($query);
-// $tvs = [];
-// while ($row = $result->fetch_assoc()) {
-//     $tvs[] = [
-//         'id' => $row['id'],
-//         'name' => $row['name'],
-//         'location' => $row['location'],
-//         'status' => $row['status'],
-//         'currentContent' => $row['current_content_name'],
-//         'contentType' => $row['current_content_type'],
-//         'contentUrl' => $row['current_content_path'],
-//         'folder' => $row['folder']
-//     ];
-// }
+// Get TV ID from query string
+$tvId = isset($_GET['tv_id']) ? intval($_GET['tv_id']) : 0;
 
-$tvs = [];
+if ($tvId <= 0) {
+    echo json_encode(['success' => false, 'message' => 'Invalid TV ID']);
+    exit;
+}
 
-echo json_encode([
-    'success' => true,
-    'tvs' => $tvs,
-    'message' => 'Chưa có dữ liệu TV. Vui lòng thêm TV từ database.'
-]);
+// Connect to database
+$conn = getDBConnection();
+
+if (!$conn) {
+    echo json_encode(['success' => false, 'message' => 'Cannot connect to database']);
+    exit;
+}
+
+// Get TV status
+$stmt = $conn->prepare("SELECT id, name, status FROM tvs WHERE id = ?");
+$stmt->bind_param("i", $tvId);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows > 0) {
+    $tv = $result->fetch_assoc();
+    
+    echo json_encode([
+        'success' => true,
+        'tv_id' => $tv['id'],
+        'tv_name' => $tv['name'],
+        'status' => $tv['status']
+    ]);
+} else {
+    echo json_encode([
+        'success' => false,
+        'message' => 'TV not found'
+    ]);
+}
+
+$conn->close();

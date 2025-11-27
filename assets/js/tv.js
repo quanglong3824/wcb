@@ -50,8 +50,22 @@ function displayTVs(tvs) {
 
 // Create TV card HTML
 function createTVCard(tv) {
-    const statusClass = tv.status === 'online' ? 'online' : 'offline';
-    const statusText = tv.status === 'online' ? 'Online' : 'Offline';
+    // Determine detailed status
+    let statusClass, statusText, statusIcon;
+    
+    if (tv.status === 'offline') {
+        statusClass = 'standby';
+        statusText = 'Standby';
+        statusIcon = 'fas fa-moon';
+    } else if (tv.status === 'online' && tv.current_content_id) {
+        statusClass = 'playing';
+        statusText = 'Playing';
+        statusIcon = 'fas fa-play-circle';
+    } else {
+        statusClass = 'online';
+        statusText = 'Online';
+        statusIcon = 'fas fa-check-circle';
+    }
     
     // Determine content type icon
     let contentIcon = 'fas fa-film';
@@ -101,8 +115,14 @@ function createTVCard(tv) {
         previewHTML = `
             <div class="tv-preview-large empty">
                 <div class="tv-preview-placeholder">
-                    <i class="fas fa-tv"></i>
-                    <p>Chưa gán WCB</p>
+                    <img src="assets/img/logo-dark-ui.png" 
+                         alt="Logo" 
+                         class="empty-logo"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="empty-fallback">
+                        <i class="fas fa-tv"></i>
+                        <p>Chưa gán WCB</p>
+                    </div>
                 </div>
             </div>
         `;
@@ -128,31 +148,26 @@ function createTVCard(tv) {
                                onchange="toggleTVStatus(${tv.id}, this.checked, '${escapeHtml(tv.name)}')">
                         <span class="toggle-slider"></span>
                     </label>
-                    <span class="tv-status-text ${statusClass}">${statusText}</span>
+                    <span class="tv-status-text ${statusClass}">
+                        <i class="${statusIcon}"></i> ${statusText}
+                    </span>
                 </div>
             </div>
             
             ${previewHTML}
             
             <div class="tv-card-body">
-                <div class="tv-detail-row">
-                    <span class="tv-detail-label">Folder:</span>
-                    <span class="tv-detail-value">${escapeHtml(tv.folder)}</span>
-                </div>
-                
-                ${tv.description ? `
-                    <div class="tv-detail-row">
-                        <span class="tv-detail-label">Mô tả:</span>
-                        <span class="tv-detail-value">${escapeHtml(tv.description)}</span>
-                    </div>
-                ` : ''}
-                
                 ${tv.assigned_media && tv.assigned_media.length > 0 ? `
-                    <div class="tv-detail-row">
-                        <span class="tv-detail-label">WCB đã gán:</span>
-                        <span class="tv-detail-value">${tv.assigned_media_count} file</span>
+                    <div class="tv-wcb-count">
+                        <i class="fas fa-images"></i>
+                        <span>${tv.assigned_media_count} WCB</span>
                     </div>
-                ` : ''}
+                ` : `
+                    <div class="tv-wcb-count empty">
+                        <i class="fas fa-inbox"></i>
+                        <span>Chưa gán WCB</span>
+                    </div>
+                `}
             </div>
             
             <div class="tv-card-actions">

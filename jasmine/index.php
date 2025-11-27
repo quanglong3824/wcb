@@ -182,5 +182,6 @@
         setInterval(loadContent, 30000);
     </script>
     <script src="../assets/js/tv-reload-checker.js"></script>
+    <script src="../assets/js/tv-standby-mode.js"></script>
 </body>
 </html>
