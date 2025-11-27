@@ -1,7 +1,7 @@
 <?php
 /**
  * Configuration File
- * Welcome Board System - Quang Long Hotel
+ * Welcome Board System - Aurora Hotel Plaza
  */
 
 // Session Configuration (phải đặt TRƯỚC session_start())
@@ -32,7 +32,7 @@ ini_set('display_errors', 1);
 // Application Settings
 define('APP_NAME', 'Welcome Board System');
 define('APP_VERSION', '1.0.0');
-define('HOTEL_NAME', 'Quang Long Hotel');
+define('HOTEL_NAME', 'Aurora Hotel Plaza');
 
 // Upload Settings
 define('MAX_FILE_SIZE', 50 * 1024 * 1024); // 50MB

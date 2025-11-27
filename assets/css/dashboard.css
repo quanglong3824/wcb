@@ -1,0 +1,212 @@
+/* Dashboard Styles */
+
+.stat-card-footer {
+    display: flex;
+    justify-content: space-around;
+    padding-top: 12px;
+    margin-top: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.stat-detail {
+    font-size: 0.85em;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.stat-detail i {
+    font-size: 0.9em;
+}
+
+/* TV Status Grid */
+.tv-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.tv-status-item {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s;
+}
+
+.tv-status-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.tv-status-item.online {
+    border-color: #10b981;
+    background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+}
+
+.tv-status-item.offline {
+    border-color: #ef4444;
+    background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
+}
+
+.tv-status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.tv-status-header i {
+    font-size: 1.5em;
+    color: #6b7280;
+}
+
+.tv-status-badge {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75em;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.tv-status-badge.online {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.tv-status-badge.offline {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.tv-status-item h4 {
+    margin: 0 0 5px 0;
+    font-size: 1.1em;
+    color: #1f2937;
+}
+
+.tv-location {
+    font-size: 0.85em;
+    color: #6b7280;
+    margin: 0 0 12px 0;
+}
+
+.tv-current-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: rgba(139, 92, 246, 0.1);
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.tv-current-content i {
+    color: #8b5cf6;
+}
+
+.tv-current-content span {
+    font-size: 0.9em;
+    color: #1f2937;
+    font-weight: 500;
+}
+
+.tv-no-content {
+    padding: 10px;
+    background: #f3f4f6;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 0.85em;
+    color: #9ca3af;
+    margin-bottom: 10px;
+}
+
+.tv-last-seen {
+    font-size: 0.8em;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Action Badges */
+.action-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+.badge-blue {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.badge-green {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.badge-purple {
+    background: #f3e8ff;
+    color: #6b21a8;
+}
+
+.badge-orange {
+    background: #fed7aa;
+    color: #92400e;
+}
+
+.badge-cyan {
+    background: #cffafe;
+    color: #155e75;
+}
+
+.badge-yellow {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge-red {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.badge-gray {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.badge-success {
+    background: #d1fae5;
+    color: #065f46;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.85em;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Stat Card Colors */
+.stat-card.stat-blue .stat-card-icon {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.stat-card.stat-green .stat-card-icon {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.stat-card.stat-orange .stat-card-icon {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.stat-card.stat-purple .stat-card-icon {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}

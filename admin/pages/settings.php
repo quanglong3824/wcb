@@ -9,7 +9,7 @@
     <form>
         <div style="margin-bottom: 20px;">
             <label style="display: block; margin-bottom: 8px; font-weight: 600;">Tên khách sạn</label>
-            <input type="text" value="Quang Long Hotel" 
+            <input type="text" value="Aurora Hotel Plaza" 
                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
         </div>
         

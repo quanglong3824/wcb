@@ -51,7 +51,7 @@ include 'includes/sidebar.php';
                         <div class="form-group">
                             <label>Tên khách sạn</label>
                             <input type="text" id="hotelName" name="hotelName" 
-                                   value="Quang Long Hotel">
+                                   value="Aurora Hotel Plaza">
                         </div>
                         
                         <div class="form-group">

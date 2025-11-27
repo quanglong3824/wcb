@@ -1,6 +1,6 @@
 -- =====================================================
 -- Database: auroraho_wcb
--- Welcome Board System - Quang Long Hotel
+-- Welcome Board System - Aurora Hotel Plaza
 -- Hệ thống quản lý nội dung hiển thị trên màn hình TV
 -- Version: 2.0 - Updated with full UI integration
 -- =====================================================
@@ -265,8 +265,8 @@ INSERT INTO `schedules` (`tv_id`, `media_id`, `schedule_date`, `start_time`, `en
 
 -- Thêm cấu hình hệ thống
 INSERT INTO `system_settings` (`setting_key`, `setting_value`, `setting_type`, `description`, `is_public`) VALUES
-('site_name', 'Quang Long Hotel - Welcome Board System', 'string', 'Tên hệ thống', 1),
-('hotel_name', 'Quang Long Hotel', 'string', 'Tên khách sạn', 1),
+('site_name', 'Aurora Hotel Plaza - Welcome Board System', 'string', 'Tên hệ thống', 1),
+('hotel_name', 'Aurora Hotel Plaza', 'string', 'Tên khách sạn', 1),
 ('heartbeat_interval', '60', 'number', 'Khoảng thời gian gửi heartbeat (giây)', 0),
 ('offline_threshold', '300', 'number', 'Thời gian tối đa không nhận heartbeat để đánh dấu offline (giây)', 0),
 ('max_upload_size', '52428800', 'number', 'Kích thước file tối đa cho phép upload (bytes) - 50MB', 0),

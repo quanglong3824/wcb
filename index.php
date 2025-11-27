@@ -14,55 +14,58 @@ include 'includes/header.php';
 // Include sidebar
 include 'includes/sidebar.php';
 
-// Thống kê từ database (TODO: Implement)
-$stats = [
-    [
-        'icon' => 'fas fa-tv',
-        'value' => '--',
-        'label' => 'Tổng số TV',
-        'color' => 'blue'
-    ],
-    [
-        'icon' => 'fas fa-check-circle',
-        'value' => '--',
-        'label' => 'TV đang hoạt động',
-        'color' => 'green'
-    ],
-    [
-        'icon' => 'fas fa-images',
-        'value' => '--',
-        'label' => 'Nội dung WCB',
-        'color' => 'orange'
-    ],
-    [
-        'icon' => 'fas fa-calendar-check',
-        'value' => '--',
-        'label' => 'Lịch chiếu hôm nay',
-        'color' => 'purple'
-    ]
-];
+// Stats sẽ được load động qua JavaScript
 ?>
 
 <!-- Main Content -->
 <main class="main-content">
+    <link rel="stylesheet" href="assets/css/dashboard.css">
     <div class="page-header">
         <h1><i class="fas fa-chart-line"></i> Dashboard</h1>
         <p>Chào mừng đến với hệ thống quản lý Welcome Board - Aurora Hotel</p>
     </div>
 
     <!-- Statistics Cards -->
-    <div class="dashboard-grid">
-        <?php foreach ($stats as $stat): ?>
-            <div class="stat-card">
-                <div class="stat-card-header">
-                    <div class="stat-card-icon">
-                        <i class="<?php echo $stat['icon']; ?>"></i>
-                    </div>
+    <div class="dashboard-grid" id="statsGrid">
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-tv"></i>
                 </div>
-                <div class="stat-card-value"><?php echo $stat['value']; ?></div>
-                <div class="stat-card-label"><?php echo $stat['label']; ?></div>
             </div>
-        <?php endforeach; ?>
+            <div class="stat-card-value"><i class="fas fa-spinner fa-spin"></i></div>
+            <div class="stat-card-label">Tổng số TV</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+            <div class="stat-card-value"><i class="fas fa-spinner fa-spin"></i></div>
+            <div class="stat-card-label">TV đang Online</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-images"></i>
+                </div>
+            </div>
+            <div class="stat-card-value"><i class="fas fa-spinner fa-spin"></i></div>
+            <div class="stat-card-label">Nội dung WCB</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-card-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+            </div>
+            <div class="stat-card-value"><i class="fas fa-spinner fa-spin"></i></div>
+            <div class="stat-card-label">Lịch chiếu hôm nay</div>
+        </div>
     </div>
 
     <!-- Quick Actions -->
@@ -115,18 +118,34 @@ $stats = [
                         <th>Trạng thái</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="activityTableBody">
                     <tr>
                         <td colspan="4" style="text-align: center; padding: 40px; color: #999;">
-                            <i class="fas fa-inbox" style="font-size: 3em; display: block; margin-bottom: 15px; opacity: 0.3;"></i>
-                            <p>Chưa có hoạt động nào</p>
+                            <i class="fas fa-spinner fa-spin" style="font-size: 3em; display: block; margin-bottom: 15px;"></i>
+                            <p>Đang tải dữ liệu...</p>
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
+    
+    <!-- TV Status Overview -->
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fas fa-tv"></i> Trạng thái TV</h2>
+        </div>
+        
+        <div id="tvStatusGrid" class="tv-status-grid">
+            <div style="text-align: center; padding: 40px; color: #999;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 3em;"></i>
+                <p style="margin-top: 15px;">Đang tải...</p>
+            </div>
+        </div>
+    </div>
 </main>
+
+<script src="assets/js/dashboard.js"></script>
 
 <?php
 // Include footer

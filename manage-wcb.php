@@ -14,6 +14,7 @@ include 'includes/sidebar.php';
 <!-- Main Content -->
 <main class="main-content">
     <link rel="stylesheet" href="assets/css/manage-wcb.css">
+    <link rel="stylesheet" href="assets/css/assign-modal.css">
     
     <div class="wcb-container">
         <!-- Header -->

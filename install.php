@@ -1,7 +1,7 @@
 <?php
 /**
  * Installation Script
- * Welcome Board System - Quang Long Hotel
+ * Welcome Board System - Aurora Hotel Plaza
  * 
  * Chạy file này lần đầu để tạo tài khoản admin
  * Database: auroraho_wcb
@@ -364,7 +364,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['install'])) {
     <div class="install-container">
         <div class="install-header">
             <h1><i class="fas fa-cog"></i> Cài đặt hệ thống</h1>
-            <p>Welcome Board System - Quang Long Hotel</p>
+            <p>Welcome Board System - Aurora Hotel Plaza</p>
         </div>
         
         <div class="install-body">

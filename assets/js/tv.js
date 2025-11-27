@@ -121,9 +121,15 @@ function createTVCard(tv) {
                         ${escapeHtml(tv.location)}
                     </div>
                 </div>
-                <span class="tv-status-badge ${statusClass}">
-                    ${statusText}
-                </span>
+                <div class="tv-status-toggle">
+                    <label class="toggle-switch" title="Bật/Tắt TV">
+                        <input type="checkbox" 
+                               ${tv.status === 'online' ? 'checked' : ''} 
+                               onchange="toggleTVStatus(${tv.id}, this.checked, '${escapeHtml(tv.name)}')">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="tv-status-text ${statusClass}">${statusText}</span>
+                </div>
             </div>
             
             ${previewHTML}
@@ -152,6 +158,12 @@ function createTVCard(tv) {
             <div class="tv-card-actions">
                 <button class="btn-tv-action btn-view" onclick="viewTV(${tv.id})">
                     <i class="fas fa-eye"></i> Xem
+                </button>
+                <button class="btn-tv-action btn-reload" onclick="forceReloadTV(${tv.id}, '${escapeHtml(tv.name)}')" title="Ép tải lại TV từ xa">
+                    <i class="fas fa-sync-alt"></i> Tải lại
+                </button>
+                <button class="btn-tv-action btn-assign" onclick="assignWCBToTV(${tv.id})">
+                    <i class="fas fa-plus-circle"></i> Gán WCB
                 </button>
                 <button class="btn-tv-action btn-edit" onclick="editTV(${tv.id})">
                     <i class="fas fa-edit"></i> Sửa
@@ -501,4 +513,519 @@ function viewMediaInNewTab(filePath) {
     if (filePath) {
         window.open(filePath, '_blank');
     }
+}
+
+// ============================================
+// SPECIAL MODES
+// ============================================
+
+// Open Orchid Mode - Assign 1 WCB to 6 TVs (exclude Restaurant)
+function openOrchidMode() {
+    // Load all WCBs
+    fetch('api/get-wcb.php')
+        .then(r => r.json())
+        .then(data => {
+            const wcbs = data.wcbs || [];
+            
+            if (wcbs.length === 0) {
+                alert('Chưa có WCB nào trong hệ thống!');
+                return;
+            }
+            
+            const modalHTML = `
+                <div id="orchidModal" class="assign-modal">
+                    <div class="assign-modal-content">
+                        <div class="assign-modal-header">
+                            <h2><i class="fas fa-layer-group"></i> Chế độ Orchid</h2>
+                            <button class="modal-close" onclick="closeOrchidModal()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="assign-modal-body">
+                            <div class="orchid-info">
+                                <div class="info-box info-purple">
+                                    <i class="fas fa-info-circle"></i>
+                                    <div>
+                                        <strong>Chế độ Orchid</strong>
+                                        <p>Gán 1 WCB cho 6 TV: Basement, Chrysan, Jasmine, Lotus, FO 1, FO 2</p>
+                                        <p style="color: #ef4444; margin-top: 5px;">
+                                            <i class="fas fa-exclamation-triangle"></i> 
+                                            TV Restaurant sẽ không bị ảnh hưởng
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="wcb-selection-orchid">
+                                <h4><i class="fas fa-image"></i> Chọn WCB để gán:</h4>
+                                <div class="wcb-selection-grid">
+                                    ${wcbs.filter(w => w.status === 'active').map(wcb => `
+                                        <label class="wcb-radio">
+                                            <input type="radio" name="orchid-wcb" value="${wcb.id}" class="wcb-radio-input">
+                                            <div class="wcb-select-item">
+                                                <div class="wcb-select-preview">
+                                                    ${wcb.type === 'image' ? `
+                                                        <img src="${escapeHtml(wcb.file_path)}" alt="${escapeHtml(wcb.name)}" 
+                                                             onerror="this.src='assets/img/no-image.png'">
+                                                    ` : `
+                                                        <div class="video-preview-grid">
+                                                            <i class="fas fa-play-circle"></i>
+                                                        </div>
+                                                    `}
+                                                </div>
+                                                <div class="wcb-select-info">
+                                                    <strong>${escapeHtml(wcb.name)}</strong>
+                                                    <span><i class="fas fa-${wcb.type === 'image' ? 'image' : 'video'}"></i> ${wcb.type === 'image' ? 'Hình ảnh' : 'Video'}</span>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="assign-modal-footer">
+                            <button class="btn-cancel" onclick="closeOrchidModal()">
+                                <i class="fas fa-times"></i> Hủy
+                            </button>
+                            <button class="btn-assign btn-orchid-confirm" onclick="confirmOrchidMode()">
+                                <i class="fas fa-check"></i> Áp dụng chế độ Orchid
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            document.body.style.overflow = 'hidden';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi khi tải dữ liệu!');
+        });
+}
+
+// Close Orchid Modal
+function closeOrchidModal() {
+    const modal = document.getElementById('orchidModal');
+    if (modal) {
+        modal.remove();
+    }
+    document.body.style.overflow = '';
+}
+
+// Confirm Orchid Mode
+function confirmOrchidMode() {
+    const selectedWCB = document.querySelector('input[name="orchid-wcb"]:checked');
+    
+    if (!selectedWCB) {
+        alert('Vui lòng chọn 1 WCB!');
+        return;
+    }
+    
+    const mediaId = parseInt(selectedWCB.value);
+    
+    if (!confirm('Bạn có chắc muốn áp dụng chế độ Orchid?\n\nWCB này sẽ được gán cho 6 TV (trừ Restaurant).')) {
+        return;
+    }
+    
+    // Show loading
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang áp dụng...';
+    btn.disabled = true;
+    
+    // Call Orchid Mode API - Bật TV và gán WCB
+    fetch('api/orchid-mode.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            media_id: mediaId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('Đã áp dụng chế độ Orchid thành công!', 'success');
+            closeOrchidModal();
+            loadTVs();
+        } else {
+            showMessage('Lỗi: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Có lỗi xảy ra!', 'error');
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+// Toggle TV Status - Quick on/off switch
+function toggleTVStatus(tvId, isOnline, tvName) {
+    const newStatus = isOnline ? 'online' : 'offline';
+    
+    // Show loading
+    showMessage(`Đang ${isOnline ? 'bật' : 'tắt'} "${tvName}"...`, 'info');
+    
+    fetch('api/toggle-tv-status.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            tv_id: tvId,
+            status: newStatus
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(`Đã ${isOnline ? 'bật' : 'tắt'} "${tvName}" thành công!`, 'success');
+            // Reload TV list to update UI
+            setTimeout(() => loadTVs(), 500);
+        } else {
+            showMessage('Lỗi: ' + data.message, 'error');
+            // Revert toggle
+            loadTVs();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Có lỗi xảy ra!', 'error');
+        // Revert toggle
+        loadTVs();
+    });
+}
+
+// Force Reload TV - Send reload signal to TV
+function forceReloadTV(tvId, tvName) {
+    if (!confirm(`Bạn có chắc muốn ép tải lại "${tvName}"?\n\nTV sẽ tự động refresh để cập nhật nội dung mới.`)) {
+        return;
+    }
+    
+    // Show loading on button
+    const btn = event.target.closest('.btn-reload');
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tải...';
+    btn.disabled = true;
+    
+    // Send reload signal
+    fetch('api/reload-tv.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            tv_id: tvId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(`Đã gửi lệnh tải lại cho "${tvName}"!`, 'success');
+            
+            // Show countdown
+            let countdown = 3;
+            const countdownInterval = setInterval(() => {
+                btn.innerHTML = `<i class="fas fa-clock"></i> ${countdown}s`;
+                countdown--;
+                
+                if (countdown < 0) {
+                    clearInterval(countdownInterval);
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                }
+            }, 1000);
+        } else {
+            showMessage('Lỗi: ' + data.message, 'error');
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Có lỗi xảy ra khi gửi lệnh tải lại!', 'error');
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+    });
+}
+
+// Shutdown All TVs - Set offline and unassign all WCBs
+function shutdownAllTVs() {
+    if (!confirm('⚠️ CẢNH BÁO ⚠️\n\nBạn có chắc muốn TẮT TOÀN BỘ hệ thống?\n\n- Tất cả 7 TV sẽ chuyển sang OFFLINE\n- Tất cả WCB sẽ bị GỠ GÁN\n\nHành động này không thể hoàn tác!')) {
+        return;
+    }
+    
+    // Double confirm
+    if (!confirm('Xác nhận lần cuối: TẮT TOÀN BỘ TV và GỠ GÁN tất cả WCB?')) {
+        return;
+    }
+    
+    // Show loading overlay
+    const loadingHTML = `
+        <div id="shutdownLoading" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; color: white;">
+            <i class="fas fa-power-off fa-3x" style="color: #ef4444; margin-bottom: 20px; animation: pulse 1s infinite;"></i>
+            <h2>Đang tắt toàn bộ hệ thống...</h2>
+            <p style="margin-top: 10px; opacity: 0.8;">Vui lòng đợi...</p>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', loadingHTML);
+    
+    // Call API to shutdown all
+    fetch('api/shutdown-all.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const loading = document.getElementById('shutdownLoading');
+        if (loading) loading.remove();
+        
+        if (data.success) {
+            showMessage('Đã tắt toàn bộ hệ thống thành công!', 'success');
+            loadTVs();
+        } else {
+            showMessage('Lỗi: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        const loading = document.getElementById('shutdownLoading');
+        if (loading) loading.remove();
+        
+        console.error('Error:', error);
+        showMessage('Có lỗi xảy ra khi tắt hệ thống!', 'error');
+    });
+}
+
+// Assign WCB to TV - Open modal to select WCB
+function assignWCBToTV(tvId) {
+    const tv = allTVs.find(t => t.id == tvId);
+    if (!tv) {
+        alert('Không tìm thấy TV!');
+        return;
+    }
+    
+    // Kiểm tra TV có online không
+    if (tv.status !== 'online') {
+        if (!confirm(`TV "${tv.name}" đang OFFLINE!\n\nBạn có chắc muốn gán WCB cho TV offline?\n\nLưu ý: TV sẽ không hiển thị nội dung cho đến khi được bật lại.`)) {
+            return;
+        }
+    }
+    
+    // Load all WCBs and current assignments
+    Promise.all([
+        fetch('api/get-wcb.php').then(r => r.json()),
+        fetch(`api/get-media-assignments.php?tv_id=${tvId}`).then(r => r.json())
+    ])
+    .then(([wcbData, assignmentsData]) => {
+        const wcbs = wcbData.wcbs || [];
+        const assignments = assignmentsData.assignments || [];
+        const assignedMediaIds = assignments.map(a => a.media_id);
+        
+        const modalHTML = `
+            <div id="assignWCBModal" class="assign-modal">
+                <div class="assign-modal-content">
+                    <div class="assign-modal-header">
+                        <h2><i class="fas fa-plus-circle"></i> Gán WCB cho ${escapeHtml(tv.name)}</h2>
+                        <button class="modal-close" onclick="closeAssignWCBModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="assign-modal-body">
+                        <div class="assign-tv-info">
+                            <div class="tv-info-box">
+                                <i class="fas fa-tv"></i>
+                                <div>
+                                    <h3>${escapeHtml(tv.name)}</h3>
+                                    <p>${escapeHtml(tv.location)}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="assign-current">
+                            <h4><i class="fas fa-check-circle"></i> WCB đã gán:</h4>
+                            ${assignments.length > 0 ? `
+                                <div class="current-assignments">
+                                    ${assignments.map(a => `
+                                        <div class="assignment-item">
+                                            <div class="assignment-preview">
+                                                ${a.media_type === 'image' ? `
+                                                    <img src="${escapeHtml(a.media_file_path)}" alt="${escapeHtml(a.media_name)}" 
+                                                         onerror="this.src='assets/img/no-image.png'">
+                                                ` : `
+                                                    <div class="video-preview-small">
+                                                        <i class="fas fa-video"></i>
+                                                    </div>
+                                                `}
+                                            </div>
+                                            <div class="assignment-info">
+                                                <strong>${escapeHtml(a.media_name)}</strong>
+                                                <span><i class="fas fa-${a.media_type === 'image' ? 'image' : 'video'}"></i> ${a.media_type === 'image' ? 'Hình ảnh' : 'Video'}</span>
+                                                ${a.is_default ? '<span class="badge-default">Mặc định</span>' : ''}
+                                            </div>
+                                            <button class="btn-unassign" onclick="unassignMediaFromTV(${a.media_id}, ${tvId}, '${escapeHtml(a.media_name)}')">
+                                                <i class="fas fa-times"></i> Hủy
+                                            </button>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : '<p class="no-assignments">Chưa gán WCB nào</p>'}
+                        </div>
+                        
+                        <div class="assign-new">
+                            <h4><i class="fas fa-plus-circle"></i> Chọn WCB để gán:</h4>
+                            <div class="wcb-selection-grid">
+                                ${wcbs.filter(w => w.status === 'active').map(wcb => `
+                                    <label class="wcb-checkbox ${assignedMediaIds.includes(wcb.id) ? 'disabled' : ''}">
+                                        <input type="checkbox" 
+                                               value="${wcb.id}" 
+                                               ${assignedMediaIds.includes(wcb.id) ? 'disabled checked' : ''}
+                                               class="wcb-select">
+                                        <div class="wcb-select-item">
+                                            <div class="wcb-select-preview">
+                                                ${wcb.type === 'image' ? `
+                                                    <img src="${escapeHtml(wcb.file_path)}" alt="${escapeHtml(wcb.name)}" 
+                                                         onerror="this.src='assets/img/no-image.png'">
+                                                ` : `
+                                                    <div class="video-preview-grid">
+                                                        <i class="fas fa-play-circle"></i>
+                                                    </div>
+                                                `}
+                                            </div>
+                                            <div class="wcb-select-info">
+                                                <strong>${escapeHtml(wcb.name)}</strong>
+                                                <span><i class="fas fa-${wcb.type === 'image' ? 'image' : 'video'}"></i> ${wcb.type === 'image' ? 'Hình ảnh' : 'Video'}</span>
+                                            </div>
+                                        </div>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="assign-modal-footer">
+                        <button class="btn-cancel" onclick="closeAssignWCBModal()">
+                            <i class="fas fa-times"></i> Đóng
+                        </button>
+                        <button class="btn-assign" onclick="confirmAssignWCBToTV(${tvId})">
+                            <i class="fas fa-check"></i> Gán WCB đã chọn
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi khi tải dữ liệu!');
+    });
+}
+
+// Close assign WCB modal
+function closeAssignWCBModal() {
+    const modal = document.getElementById('assignWCBModal');
+    if (modal) {
+        modal.remove();
+    }
+    document.body.style.overflow = '';
+}
+
+// Confirm assign WCB to TV
+function confirmAssignWCBToTV(tvId) {
+    const selectedWCBs = Array.from(document.querySelectorAll('.wcb-select:checked:not(:disabled)'))
+        .map(cb => parseInt(cb.value));
+    
+    if (selectedWCBs.length === 0) {
+        alert('Vui lòng chọn ít nhất 1 WCB!');
+        return;
+    }
+    
+    // Show loading
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang gán...';
+    btn.disabled = true;
+    
+    // Assign each WCB to this TV
+    const promises = selectedWCBs.map(mediaId => {
+        return fetch('api/assign-media.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                media_id: mediaId,
+                tv_ids: [tvId],
+                is_default: 0
+            })
+        }).then(r => r.json());
+    });
+    
+    Promise.all(promises)
+        .then(results => {
+            const allSuccess = results.every(r => r.success);
+            
+            if (allSuccess) {
+                showMessage('Gán WCB thành công!', 'success');
+                closeAssignWCBModal();
+                loadTVs(); // Reload to update
+            } else {
+                showMessage('Có lỗi xảy ra khi gán một số WCB!', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('Có lỗi xảy ra khi gán!', 'error');
+        })
+        .finally(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+}
+
+// Unassign media from TV
+function unassignMediaFromTV(mediaId, tvId, mediaName) {
+    if (!confirm(`Bạn có chắc muốn hủy gán "${mediaName}" khỏi TV này?`)) {
+        return;
+    }
+    
+    fetch('api/unassign-media.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            media_id: mediaId,
+            tv_id: tvId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('Hủy gán thành công!', 'success');
+            // Reload modal
+            closeAssignWCBModal();
+            setTimeout(() => {
+                assignWCBToTV(tvId);
+            }, 500);
+        } else {
+            showMessage('Lỗi: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Có lỗi xảy ra khi hủy gán!', 'error');
+    });
 }

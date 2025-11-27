@@ -14,6 +14,8 @@ include 'includes/sidebar.php';
 <!-- Main Content -->
 <main class="main-content">
     <link rel="stylesheet" href="assets/css/tv.css">
+    <link rel="stylesheet" href="assets/css/orchid-mode.css">
+    <link rel="stylesheet" href="assets/css/assign-modal.css">
     
     <div class="tv-container">
         <!-- Header -->
@@ -21,6 +23,14 @@ include 'includes/sidebar.php';
             <div>
                 <h1><i class="fas fa-tv"></i> Quản lý TV</h1>
                 <p>Quản lý 7 màn hình TV tại các vị trí trong khách sạn</p>
+            </div>
+            <div class="special-modes">
+                <button class="btn-special btn-orchid" onclick="openOrchidMode()" title="Gán 1 WCB cho 6 TV (trừ Restaurant)">
+                    <i class="fas fa-layer-group"></i> Chế độ Orchid
+                </button>
+                <button class="btn-special btn-shutdown" onclick="shutdownAllTVs()" title="Tắt toàn bộ TV và gỡ gán WCB">
+                    <i class="fas fa-power-off"></i> Tắt toàn bộ
+                </button>
             </div>
         </div>
 

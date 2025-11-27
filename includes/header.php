@@ -20,7 +20,7 @@ $basePath = isset($basePath) ? $basePath : '../';
     <div class="top-info-bar">
         <div class="info-bar-content">
             <div class="info-bar-left">
-                <span><i class="fas fa-hotel"></i> Quang Long Hotel - Welcome Board System</span>
+                <span><i class="fas fa-hotel"></i> Aurora Hotel Plaza - Welcome Board System</span>
             </div>
             <div class="info-bar-right">
                 <a href="#" class="info-link"><i class="fas fa-question-circle"></i> Hỗ trợ</a>

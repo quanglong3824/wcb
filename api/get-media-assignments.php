@@ -4,8 +4,9 @@ require_once '../config/php/config.php';
 
 header('Content-Type: application/json');
 
-// Lấy media_id từ query string
+// Lấy media_id hoặc tv_id từ query string
 $mediaId = isset($_GET['media_id']) ? intval($_GET['media_id']) : 0;
+$tvId = isset($_GET['tv_id']) ? intval($_GET['tv_id']) : 0;
 
 // Kết nối database
 $conn = getDBConnection();
@@ -16,7 +17,7 @@ if (!$conn) {
 }
 
 if ($mediaId > 0) {
-    // Lấy assignments cho 1 media cụ thể
+    // Lấy assignments cho 1 media cụ thể (dùng cho manage-wcb)
     $query = "SELECT 
                 tma.id,
                 tma.tv_id,
@@ -37,6 +38,29 @@ if ($mediaId > 0) {
     $stmt->bind_param("i", $mediaId);
     $stmt->execute();
     $result = $stmt->get_result();
+} elseif ($tvId > 0) {
+    // Lấy assignments cho 1 TV cụ thể (dùng cho tv.php)
+    $query = "SELECT 
+                tma.id,
+                tma.tv_id,
+                tma.media_id,
+                tma.is_default,
+                tma.assigned_at,
+                m.name as media_name,
+                m.type as media_type,
+                m.file_path as media_file_path,
+                m.thumbnail_path as media_thumbnail_path,
+                u.full_name as assigned_by_name
+              FROM tv_media_assignments tma
+              INNER JOIN media m ON tma.media_id = m.id
+              LEFT JOIN users u ON tma.assigned_by = u.id
+              WHERE tma.tv_id = ? AND m.status = 'active'
+              ORDER BY tma.is_default DESC, m.name ASC";
+    
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("i", $tvId);
+    $stmt->execute();
+    $result = $stmt->get_result();
 } else {
     // Lấy tất cả assignments
     $query = "SELECT 
@@ -50,6 +74,7 @@ if ($mediaId > 0) {
                 t.status as tv_status,
                 m.name as media_name,
                 m.type as media_type,
+                m.file_path as media_file_path,
                 u.full_name as assigned_by_name
               FROM tv_media_assignments tma
               INNER JOIN tvs t ON tma.tv_id = t.id

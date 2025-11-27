@@ -456,27 +456,36 @@ function showAssignModal(wcb) {
                         <div class="assign-new">
                             <h4><i class="fas fa-plus-circle"></i> Gán cho TV mới:</h4>
                             <div class="tv-list">
-                                ${tvs.map(tv => `
-                                    <label class="tv-checkbox ${assignedTVIds.includes(tv.id) ? 'disabled' : ''}">
+                                ${tvs.map(tv => {
+                                    const isAssigned = assignedTVIds.includes(tv.id);
+                                    const isOffline = tv.status !== 'online';
+                                    const isDisabled = isAssigned || isOffline;
+                                    
+                                    return `
+                                    <label class="tv-checkbox ${isDisabled ? 'disabled' : ''} ${isOffline ? 'offline' : ''}">
                                         <input type="checkbox" 
                                                value="${tv.id}" 
-                                               ${assignedTVIds.includes(tv.id) ? 'disabled checked' : ''}
+                                               ${isDisabled ? 'disabled' : ''}
+                                               ${isAssigned ? 'checked' : ''}
                                                class="tv-select">
                                         <div class="tv-item">
                                             <div class="tv-item-info">
                                                 <strong>${escapeHtml(tv.name)}</strong>
                                                 <span>${escapeHtml(tv.location)}</span>
+                                                ${isOffline ? '<span class="warning-badge"><i class="fas fa-exclamation-triangle"></i> Offline</span>' : ''}
                                             </div>
                                             <span class="tv-status ${tv.status}">${tv.status === 'online' ? 'Online' : 'Offline'}</span>
                                         </div>
                                     </label>
-                                `).join('')}
+                                `}).join('')}
                             </div>
-                            
-                            <label class="set-default-checkbox">
-                                <input type="checkbox" id="setAsDefault">
-                                <span>Đặt làm nội dung mặc định cho TV được chọn</span>
-                            </label>
+                            ${tvs.filter(tv => tv.status !== 'online' && !assignedTVIds.includes(tv.id)).length > 0 ? `
+                                <div class="offline-warning">
+                                    <i class="fas fa-info-circle"></i>
+                                    <span>Chỉ có thể gán cho TV đang Online</span>
+                                </div>
+                            ` : ''}
+                        </div>
                         </div>
                     </div>
                     
@@ -522,7 +531,7 @@ function confirmAssign(mediaId) {
         return;
     }
     
-    const isDefault = document.getElementById('setAsDefault').checked ? 1 : 0;
+    const isDefault = 0; // Không dùng default nữa
     
     console.log('Is default:', isDefault);
     

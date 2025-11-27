@@ -31,7 +31,7 @@ if (isset($_SESSION['user_id'])) {
     <div class="login-container">
         <div class="login-header">
             <h1>Welcome Board System</h1>
-            <p>Quang Long Hotel Management</p>
+            <p>Aurora Hotel Plaza Management</p>
         </div>
         
         <div class="login-body">

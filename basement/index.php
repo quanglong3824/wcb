@@ -30,11 +30,17 @@
             position: relative;
         }
         
+        #content-display {
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: opacity;
+        }
+        
         #content-display img,
         #content-display video {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
+            display: block;
         }
         
         .fullscreen-btn {
@@ -60,23 +66,25 @@
         
         .tv-info {
             position: fixed;
-            top: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 15px 25px;
-            border-radius: 10px;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 15px;
+            border-radius: 8px;
             z-index: 999;
         }
         
         .tv-info h2 {
-            margin: 0 0 5px 0;
-            font-size: 1.5em;
+            margin: 0 0 3px 0;
+            font-size: 0.9em;
             color: #d4af37;
+            font-weight: 600;
         }
         
         .tv-info p {
             margin: 0;
-            opacity: 0.8;
+            opacity: 0.7;
+            font-size: 0.75em;
         }
         
         .no-content {
@@ -99,7 +107,7 @@
 <body>
     <div class="tv-info">
         <h2><i class="fas fa-tv"></i> TV Basement</h2>
-        <p>Tầng hầm - Quang Long Hotel</p>
+        <p>Tầng hầm - Aurora Hotel Plaza</p>
     </div>
     
     <div id="tv-display">
@@ -116,7 +124,11 @@
     </button>
     
     <script>
-        // Toggle fullscreen
+        const TV_ID = 1; // TV Basement
+        let contentList = [];
+        let currentIndex = 0;
+        let slideInterval = null;
+        
         function toggleFullscreen() {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen().catch(err => {
@@ -127,24 +139,25 @@
             }
         }
         
-        // Note: Auto fullscreen is not allowed by browsers
-        // User must click the fullscreen button manually
-        
-        // Load content from API
-        function loadContent() {
-            console.log('Loading content for TV ID: 1');
+        // Load all content assigned to this TV (max 3)
+        function loadContentList() {
+            console.log('Loading content list for TV ID:', TV_ID);
             
-            fetch('../api/get-tv-content.php?tv_id=1')
-                .then(response => {
-                    console.log('Response status:', response.status);
-                    return response.json();
-                })
+            fetch('../api/get-tv-content.php?tv_id=' + TV_ID + '&get_all=1')
+                .then(response => response.json())
                 .then(data => {
                     console.log('API Response:', data);
                     
-                    if (data.success && data.content) {
-                        console.log('Displaying content:', data.content);
-                        displayContent(data.content);
+                    if (data.success && data.contents && data.contents.length > 0) {
+                        contentList = data.contents.slice(0, 3); // Tối đa 3 WCB
+                        console.log('Loaded', contentList.length, 'contents');
+                        
+                        // Start slideshow if multiple contents
+                        if (contentList.length > 1) {
+                            startSlideshow();
+                        } else {
+                            displayContent(contentList[0]);
+                        }
                     } else {
                         console.log('No content or error:', data.message);
                         showNoContent(data.message || 'Chưa có nội dung hiển thị');
@@ -156,12 +169,46 @@
                 });
         }
         
+        // Start slideshow with smooth fade effect
+        function startSlideshow() {
+            // Display first content
+            displayContent(contentList[currentIndex]);
+            
+            // Clear existing interval
+            if (slideInterval) {
+                clearInterval(slideInterval);
+            }
+            
+            // Change content every 8 seconds
+            slideInterval = setInterval(() => {
+                nextSlide();
+            }, 8000);
+        }
+        
+        // Next slide with smooth transition
+        function nextSlide() {
+            const display = document.getElementById('content-display');
+            
+            // Fade out
+            display.style.opacity = '0';
+            
+            // Wait for fade out, then change content
+            setTimeout(() => {
+                currentIndex = (currentIndex + 1) % contentList.length;
+                displayContent(contentList[currentIndex]);
+                
+                // Fade in
+                setTimeout(() => {
+                    display.style.opacity = '1';
+                }, 50);
+            }, 800);
+        }
+        
         // Display content
         function displayContent(content) {
             const display = document.getElementById('content-display');
             
-            console.log('Content type:', content.type);
-            console.log('Content path:', content.file_path);
+            console.log('Displaying:', content.name, '- Type:', content.type);
             
             if (content.type === 'image') {
                 display.innerHTML = `<img src="../${content.file_path}" alt="${content.name}" onerror="console.error('Image load error'); this.src='../assets/img/no-image.png'">`;
@@ -182,10 +229,11 @@
         }
         
         // Load content on page load
-        loadContent();
+        loadContentList();
         
-        // Refresh content every 30 seconds
-        setInterval(loadContent, 30000);
+        // Refresh content list every 5 minutes
+        setInterval(loadContentList, 300000);
     </script>
+    <script src="../assets/js/tv-reload-checker.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-# Welcome Board System - Quang Long Hotel
+# Welcome Board System - Aurora Hotel Plaza
 
 Hệ thống quản lý bảng chào mừng thông minh cho khách sạn Quang Long.
 
