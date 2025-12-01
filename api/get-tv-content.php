@@ -2,20 +2,33 @@
 require_once '../config/php/config.php';
 
 header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
 
-// Get TV ID from query string
+// Get TV ID and folder from query string
 $tvId = isset($_GET['tv_id']) ? intval($_GET['tv_id']) : 0;
-
-if ($tvId <= 0) {
-    echo json_encode(['success' => false, 'message' => 'Invalid TV ID']);
-    exit;
-}
+$tvFolder = isset($_GET['folder']) ? trim($_GET['folder']) : '';
 
 // Connect to database
 $conn = getDBConnection();
 
 if (!$conn) {
     echo json_encode(['success' => false, 'message' => 'Cannot connect to database']);
+    exit;
+}
+
+// If folder is provided and no TV ID, find TV by folder
+if ($tvId <= 0 && !empty($tvFolder)) {
+    $stmt = $conn->prepare("SELECT id FROM tvs WHERE folder = ?");
+    $stmt->bind_param("s", $tvFolder);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result->num_rows > 0) {
+        $tvId = $result->fetch_assoc()['id'];
+    }
+}
+
+if ($tvId <= 0) {
+    echo json_encode(['success' => false, 'message' => 'Invalid TV ID or folder']);
     exit;
 }
 

@@ -7,87 +7,57 @@
  * Database: auroraho_wcb
  */
 
-// Clear all existing sessions and login states before installation
 session_start();
-
-// Destroy any existing session data
-$_SESSION = [];
-
-// Destroy session cookie
-if (isset($_COOKIE[session_name()])) {
-    setcookie(session_name(), '', time() - 3600, '/');
-}
-
-// Regenerate session ID for security
-session_regenerate_id(true);
-
-// Prevent running if already installed
-$lockFile = __DIR__ . '/.installed';
-if (file_exists($lockFile)) {
-    die('
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Already Installed</title>
-        <meta charset="UTF-8">
-        <style>
-            body { font-family: Arial; text-align: center; padding: 50px; background: #f5f5f5; }
-            .message { background: white; padding: 40px; border-radius: 10px; max-width: 500px; margin: 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            .icon { font-size: 4em; color: #10b981; margin-bottom: 20px; }
-            h1 { color: #333; }
-            a { color: #d4af37; text-decoration: none; font-weight: bold; }
-        </style>
-    </head>
-    <body>
-        <div class="message">
-            <div class="icon">✓</div>
-            <h1>Hệ thống đã được cài đặt</h1>
-            <p>Nếu muốn cài đặt lại, vui lòng xóa file <code>.installed</code></p>
-            <p><a href="index.php">← Về trang chủ</a></p>
-        </div>
-    </body>
-    </html>
-    ');
-}
 
 require_once 'config/php/config.php';
 
-$errors = [];
-$success = [];
-$dbStatus = null;
+// Prevent running if already installed
+$lockFile = __DIR__ . '/.installed';
 
-// Auto-check database connection on page load
+// Check database and admin status
 $dbCheckResult = checkDatabaseConnection();
 $dbStatus = [
     'connected' => $dbCheckResult['success'],
-    'environment' => $dbCheckResult['environment'],
-    'host' => $dbCheckResult['host'],
-    'database' => $dbCheckResult['database'],
-    'message' => $dbCheckResult['message'],
-    'tables_count' => count($dbCheckResult['tables']),
-    'has_users_table' => in_array('users', $dbCheckResult['tables'])
+    'environment' => $dbCheckResult['environment'] ?? 'unknown',
+    'host' => $dbCheckResult['host'] ?? 'unknown',
+    'database' => $dbCheckResult['database'] ?? 'unknown',
+    'message' => $dbCheckResult['message'] ?? '',
+    'tables_count' => count($dbCheckResult['tables'] ?? []),
+    'has_users_table' => in_array('users', $dbCheckResult['tables'] ?? [])
 ];
 
-// Auto-check if admin exists and redirect to login
+// Check if admin exists
 $adminExists = false;
-$conn = getDBConnection();
-if ($conn && $dbStatus['has_users_table']) {
-    $result = $conn->query("SELECT id FROM users WHERE role = 'super_admin' LIMIT 1");
-    $adminExists = ($result && $result->num_rows > 0);
+if ($dbStatus['connected'] && $dbStatus['has_users_table']) {
+    $conn = getDBConnection();
+    if ($conn) {
+        $result = $conn->query("SELECT id FROM users WHERE username = 'admin' OR role = 'super_admin' LIMIT 1");
+        $adminExists = ($result && $result->num_rows > 0);
+        $conn->close();
+    }
 }
 
-// If everything is OK (DB connected, tables exist, admin exists), redirect to login
-if ($dbStatus['connected'] && $dbStatus['has_users_table'] && $adminExists) {
-    // Mark as installed if not already
+// Auto-redirect if everything is OK
+if (file_exists($lockFile) || ($dbStatus['connected'] && $dbStatus['has_users_table'] && $adminExists)) {
+    // Create lock file if not exists
     if (!file_exists($lockFile)) {
         file_put_contents($lockFile, date('Y-m-d H:i:s'));
     }
+    
+    // Redirect to login
     header('Location: auth/login.php');
     exit;
 }
 
+$errors = [];
+$success = [];
+
 // Process installation
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['install'])) {
+    // Clear session for fresh start
+    $_SESSION = [];
+    session_regenerate_id(true);
+    
     $conn = getDBConnection();
     
     if (!$conn) {
@@ -118,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['install'])) {
                     // Mark as installed
                     file_put_contents($lockFile, date('Y-m-d H:i:s'));
                     
-                    // Redirect to login page
+                    // Redirect to login after 2 seconds
                     header('refresh:2;url=auth/login.php');
                 } else {
                     $errors[] = "Lỗi tạo admin: {$stmt->error}";
@@ -438,7 +408,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['install'])) {
                 
                 <div class="loading">
                     <i class="fas fa-spinner"></i>
-                    <p>Đang chuyển hướng đến trang đăng nhập...</p>
+                    <p>Đang chuyển hướng đến trang chủ...</p>
                 </div>
             <?php else: ?>
                 <div class="db-info">
