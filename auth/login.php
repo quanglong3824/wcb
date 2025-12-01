@@ -1,11 +1,32 @@
 <?php
 session_start();
 
+require_once dirname(__DIR__) . '/config/php/config.php';
+
 // Check if system is installed
 $lockFile = dirname(__DIR__) . '/.installed';
+$needsInstall = false;
+
 if (!file_exists($lockFile)) {
-    header('Location: ../install.php');
-    exit;
+    // Lock file doesn't exist, check if admin exists in database
+    $conn = getDBConnection();
+    if ($conn) {
+        $result = $conn->query("SELECT id FROM users WHERE username = 'admin' OR role = 'super_admin' LIMIT 1");
+        if ($result && $result->num_rows > 0) {
+            // Admin exists, create lock file
+            @file_put_contents($lockFile, date('Y-m-d H:i:s'));
+        } else {
+            $needsInstall = true;
+        }
+        $conn->close();
+    } else {
+        $needsInstall = true;
+    }
+    
+    if ($needsInstall) {
+        header('Location: ../install.php');
+        exit;
+    }
 }
 
 // Nếu đã đăng nhập, redirect về trang chủ

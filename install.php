@@ -14,10 +14,16 @@ require_once 'config/php/config.php';
 // Prevent running if already installed
 $lockFile = __DIR__ . '/.installed';
 
+// If lock file exists, redirect immediately
+if (file_exists($lockFile)) {
+    header('Location: auth/login.php');
+    exit;
+}
+
 // Check database and admin status
 $dbCheckResult = checkDatabaseConnection();
 $dbStatus = [
-    'connected' => $dbCheckResult['success'],
+    'connected' => $dbCheckResult['success'] ?? false,
     'environment' => $dbCheckResult['environment'] ?? 'unknown',
     'host' => $dbCheckResult['host'] ?? 'unknown',
     'database' => $dbCheckResult['database'] ?? 'unknown',
@@ -37,14 +43,12 @@ if ($dbStatus['connected'] && $dbStatus['has_users_table']) {
     }
 }
 
-// Auto-redirect if everything is OK
-if (file_exists($lockFile) || ($dbStatus['connected'] && $dbStatus['has_users_table'] && $adminExists)) {
-    // Create lock file if not exists
-    if (!file_exists($lockFile)) {
-        file_put_contents($lockFile, date('Y-m-d H:i:s'));
-    }
+// Auto-redirect if everything is OK (DB connected, users table exists, admin exists)
+if ($dbStatus['connected'] && $dbStatus['has_users_table'] && $adminExists) {
+    // Try to create lock file
+    @file_put_contents($lockFile, date('Y-m-d H:i:s'));
     
-    // Redirect to login
+    // Redirect to login (don't check lock file again to avoid loop)
     header('Location: auth/login.php');
     exit;
 }

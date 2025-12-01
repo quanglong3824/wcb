@@ -13,10 +13,27 @@ if (session_status() === PHP_SESSION_NONE) {
 // Check if system is installed
 $lockFile = dirname(__DIR__) . '/.installed';
 if (!file_exists($lockFile)) {
-    // Redirect to install page
-    $installUrl = getInstallUrl();
-    header("Location: {$installUrl}");
-    exit;
+    // Lock file doesn't exist, check if admin exists
+    require_once dirname(__DIR__) . '/config/php/config.php';
+    $conn = getDBConnection();
+    $needsInstall = true;
+    
+    if ($conn) {
+        $result = $conn->query("SELECT id FROM users WHERE username = 'admin' OR role = 'super_admin' LIMIT 1");
+        if ($result && $result->num_rows > 0) {
+            // Admin exists, create lock file and continue
+            @file_put_contents($lockFile, date('Y-m-d H:i:s'));
+            $needsInstall = false;
+        }
+        $conn->close();
+    }
+    
+    if ($needsInstall) {
+        // Redirect to install page
+        $installUrl = getInstallUrl();
+        header("Location: {$installUrl}");
+        exit;
+    }
 }
 
 // Check if user is logged in
