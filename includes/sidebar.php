@@ -51,6 +51,31 @@ $menuItems = [
         'active' => ($currentPage == 'settings.php')
     ]
 ];
+
+// Admin menu items (chỉ hiển thị cho super_admin)
+$adminMenuItems = [];
+if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'super_admin') {
+    $adminMenuItems = [
+        [
+            'icon' => 'fas fa-users',
+            'label' => 'Quản lý Users',
+            'url' => $basePath . 'users.php',
+            'active' => ($currentPage == 'users.php')
+        ],
+        [
+            'icon' => 'fas fa-history',
+            'label' => 'Activity Logs',
+            'url' => $basePath . 'logs.php',
+            'active' => ($currentPage == 'logs.php')
+        ],
+        [
+            'icon' => 'fas fa-database',
+            'label' => 'Backup',
+            'url' => $basePath . 'backup.php',
+            'active' => ($currentPage == 'backup.php')
+        ]
+    ];
+}
 ?>
 
 <!-- Sidebar Navigation -->
@@ -77,9 +102,22 @@ $menuItems = [
             <?php endforeach; ?>
         </div>
         
+        <?php if (!empty($adminMenuItems)): ?>
+        <div class="nav-section">
+            <div class="nav-section-title">Administration</div>
+            <?php foreach ($adminMenuItems as $item): ?>
+                <a href="<?php echo htmlspecialchars($item['url']); ?>" 
+                   class="nav-item <?php echo $item['active'] ? 'active' : ''; ?>">
+                    <i class="<?php echo htmlspecialchars($item['icon']); ?>"></i>
+                    <span><?php echo htmlspecialchars($item['label']); ?></span>
+                </a>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+        
         <div class="nav-section">
             <div class="nav-section-title">Account</div>
-            <a href="<?php echo $basePath; ?>profile.php" class="nav-item">
+            <a href="<?php echo $basePath; ?>profile.php" class="nav-item <?php echo ($currentPage == 'profile.php') ? 'active' : ''; ?>">
                 <i class="fas fa-user"></i>
                 <span>Profile</span>
             </a>

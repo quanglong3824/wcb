@@ -68,6 +68,24 @@ $dbStatus = [
     'has_users_table' => in_array('users', $dbCheckResult['tables'])
 ];
 
+// Auto-check if admin exists and redirect to login
+$adminExists = false;
+$conn = getDBConnection();
+if ($conn && $dbStatus['has_users_table']) {
+    $result = $conn->query("SELECT id FROM users WHERE role = 'super_admin' LIMIT 1");
+    $adminExists = ($result && $result->num_rows > 0);
+}
+
+// If everything is OK (DB connected, tables exist, admin exists), redirect to login
+if ($dbStatus['connected'] && $dbStatus['has_users_table'] && $adminExists) {
+    // Mark as installed if not already
+    if (!file_exists($lockFile)) {
+        file_put_contents($lockFile, date('Y-m-d H:i:s'));
+    }
+    header('Location: auth/login.php');
+    exit;
+}
+
 // Process installation
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['install'])) {
     $conn = getDBConnection();
@@ -100,22 +118,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['install'])) {
                     // Mark as installed
                     file_put_contents($lockFile, date('Y-m-d H:i:s'));
                     
-                    // Auto login as admin
-                    $adminId = $stmt->insert_id;
-                    $_SESSION['user_id'] = $adminId;
-                    $_SESSION['username'] = 'admin';
-                    $_SESSION['full_name'] = 'Administrator';
-                    $_SESSION['user_role'] = 'super_admin';
-                    $_SESSION['user_email'] = 'admin@quanglonghotel.com';
-                    
-                    header('refresh:3;url=index.php');
+                    // Redirect to login page
+                    header('refresh:2;url=auth/login.php');
                 } else {
                     $errors[] = "Lỗi tạo admin: {$stmt->error}";
                 }
                 
                 $stmt->close();
             } else {
-                $errors[] = 'Tài khoản admin đã tồn tại. Không cần cài đặt lại.';
+                // Admin exists, mark as installed and redirect
+                file_put_contents($lockFile, date('Y-m-d H:i:s'));
+                header('Location: auth/login.php');
+                exit;
             }
         }
         
@@ -424,7 +438,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['install'])) {
                 
                 <div class="loading">
                     <i class="fas fa-spinner"></i>
-                    <p>Đang chuyển hướng đến trang chủ...</p>
+                    <p>Đang chuyển hướng đến trang đăng nhập...</p>
                 </div>
             <?php else: ?>
                 <div class="db-info">
