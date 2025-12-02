@@ -125,16 +125,25 @@ if (file_exists(dirname(__DIR__) . '/config/php/config.php')) {
         
         #content-display img,
         #content-display video {
+            width: 100%;
+            height: 100%;
+            -o-object-fit: cover;
+            object-fit: cover;
+            display: block;
+        }
+        
+        /* Mode: contain (giữ tỷ lệ) hoặc cover (full màn hình) */
+        #content-display.mode-contain img,
+        #content-display.mode-contain video {
             max-width: 100%;
             max-height: 100%;
             width: auto;
             height: auto;
             -o-object-fit: contain;
             object-fit: contain;
-            display: block;
         }
         
-        /* TV Info Overlay */
+        /* TV Info Overlay - Ẩn mặc định, hiện khi hover */
         .tv-info {
             position: fixed;
             top: 15px;
@@ -143,11 +152,17 @@ if (file_exists(dirname(__DIR__) . '/config/php/config.php')) {
             padding: 8px 15px;
             border-radius: 8px;
             z-index: 999;
+            opacity: 0;
+            -webkit-transition: opacity 0.3s;
+            transition: opacity 0.3s;
+        }
+        
+        body:hover .tv-info {
             opacity: 0.8;
         }
         
         .tv-info:hover {
-            opacity: 1;
+            opacity: 1 !important;
         }
         
         .tv-info h2 {
@@ -163,7 +178,7 @@ if (file_exists(dirname(__DIR__) . '/config/php/config.php')) {
             font-size: 0.75em;
         }
         
-        /* Fullscreen Button */
+        /* Fullscreen Button - Ẩn mặc định, hiện khi hover */
         .fullscreen-btn {
             position: fixed;
             bottom: 20px;
@@ -176,10 +191,15 @@ if (file_exists(dirname(__DIR__) . '/config/php/config.php')) {
             cursor: pointer;
             font-size: 1.2em;
             z-index: 1000;
+            opacity: 0;
             -webkit-transition: all 0.3s;
             -moz-transition: all 0.3s;
             transition: all 0.3s;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        body:hover .fullscreen-btn {
+            opacity: 1;
         }
         
         .fullscreen-btn:hover {

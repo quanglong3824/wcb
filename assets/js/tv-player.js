@@ -256,13 +256,15 @@
         
         if (content.type === 'image') {
             html = '<img src="' + filePath + '" alt="' + escapeHtml(content.name) + '" ' +
-                   'style="max-width:100%;max-height:100%;object-fit:contain;" ' +
+                   'style="width:100%;height:100%;object-fit:cover;" ' +
                    'onerror="this.src=\'' + basePath + 'assets/img/no-image.png\'">';
         } else if (content.type === 'video') {
             html = '<video src="' + filePath + '" autoplay loop muted playsinline ' +
-                   'style="max-width:100%;max-height:100%;object-fit:contain;"></video>';
+                   'style="width:100%;height:100%;object-fit:cover;"></video>';
         }
         
+        // Remove mode-contain class to show full screen
+        display.classList.remove('mode-contain');
         display.innerHTML = html;
         
         // For video, ensure it plays
