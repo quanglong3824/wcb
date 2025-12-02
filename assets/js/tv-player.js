@@ -264,15 +264,23 @@
         }
     }
     
-    // Show no content message
+    // Show no content message - Display logo instead of error
     function showNoContent(message) {
         var display = document.getElementById('content-display');
         if (!display) return;
         
+        var basePath = getBasePath();
+        
+        // Hiển thị logo thay vì thông báo lỗi
         display.innerHTML = 
-            '<div style="text-align:center;padding:40px;">' +
-            '<i class="fas fa-tv" style="font-size:5em;color:#666;display:block;margin-bottom:20px;"></i>' +
-            '<p style="font-size:1.5em;color:#999;">' + escapeHtml(message) + '</p>' +
+            '<div style="text-align:center;padding:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;">' +
+            '<img src="' + basePath + 'assets/img/logo-dark-ui.png" alt="Logo" ' +
+            'style="max-width:400px;max-height:300px;object-fit:contain;margin-bottom:30px;" ' +
+            'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\';">' +
+            '<div style="display:none;text-align:center;">' +
+            '<i class="fas fa-tv" style="font-size:5em;color:#d4af37;display:block;margin-bottom:20px;"></i>' +
+            '</div>' +
+            '<p style="font-size:1.2em;color:#666;margin-top:20px;">Chế độ chờ</p>' +
             '</div>';
     }
     

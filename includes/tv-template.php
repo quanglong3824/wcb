@@ -250,9 +250,12 @@ if (file_exists(dirname(__DIR__) . '/config/php/config.php')) {
     <!-- Main Display -->
     <div id="tv-display">
         <div id="content-display">
-            <div class="no-content">
-                <i class="fas fa-spinner fa-spin"></i>
-                <p>Đang tải nội dung...</p>
+            <div class="no-content" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;">
+                <img src="../assets/img/logo-dark-ui.png" alt="Logo" 
+                     style="max-width:350px;max-height:250px;object-fit:contain;margin-bottom:20px;"
+                     onerror="this.style.display='none';">
+                <i class="fas fa-spinner fa-spin" style="font-size:2em;color:#d4af37;margin-bottom:15px;"></i>
+                <p style="color:#888;">Đang tải nội dung...</p>
             </div>
         </div>
     </div>
