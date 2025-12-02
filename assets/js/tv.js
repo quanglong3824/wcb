@@ -131,14 +131,11 @@ function createTVCard(tv) {
     return `
         <div class="tv-card">
             <div class="tv-card-header">
-                <div class="tv-info">
-                    <div class="tv-name">
-                        <i class="fas fa-tv"></i>
-                        ${escapeHtml(tv.name)}
-                    </div>
-                    <div class="tv-location">
-                        <i class="fas fa-map-marker-alt"></i>
-                        ${escapeHtml(tv.location)}
+                <div class="tv-header-left">
+                    <img src="assets/img/logo-dark-ui.png" alt="Logo" class="tv-logo" onerror="this.style.display='none'">
+                    <div class="tv-info">
+                        <div class="tv-name">${escapeHtml(tv.name)}</div>
+                        <div class="tv-location">${escapeHtml(tv.location)}</div>
                     </div>
                 </div>
                 <div class="tv-status-toggle">
@@ -148,43 +145,42 @@ function createTVCard(tv) {
                                onchange="toggleTVStatus(${tv.id}, this.checked, '${escapeHtml(tv.name)}')">
                         <span class="toggle-slider"></span>
                     </label>
-                    <span class="tv-status-text ${statusClass}">
-                        <i class="${statusIcon}"></i> ${statusText}
+                    <span class="tv-status-badge ${statusClass}">
+                        <span class="status-dot"></span>
+                        ${statusText}
                     </span>
                 </div>
             </div>
             
             ${previewHTML}
             
-            <div class="tv-card-body">
-                ${tv.assigned_media && tv.assigned_media.length > 0 ? `
-                    <div class="tv-wcb-count">
-                        <i class="fas fa-images"></i>
-                        <span>${tv.assigned_media_count} WCB</span>
-                    </div>
-                ` : `
-                    <div class="tv-wcb-count empty">
-                        <i class="fas fa-inbox"></i>
-                        <span>Chưa gán WCB</span>
-                    </div>
-                `}
+            <div class="tv-card-footer">
+                <div class="tv-wcb-info">
+                    ${tv.assigned_media && tv.assigned_media.length > 0 ? `
+                        <span class="wcb-count"><i class="fas fa-layer-group"></i> ${tv.assigned_media_count} WCB</span>
+                    ` : `
+                        <span class="wcb-empty"><i class="fas fa-inbox"></i> Chưa gán</span>
+                    `}
+                </div>
+                <div class="tv-quick-actions">
+                    <button class="btn-icon" onclick="viewTV(${tv.id})" title="Xem TV">
+                        <i class="fas fa-external-link-alt"></i>
+                    </button>
+                    <button class="btn-icon" onclick="forceReloadTV(${tv.id}, '${escapeHtml(tv.name)}')" title="Tải lại">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="btn-icon ${tv.is_paused ? 'active' : ''}" onclick="togglePauseTV(${tv.id}, '${escapeHtml(tv.name)}')" title="${tv.is_paused ? 'Tiếp tục' : 'Tạm dừng'}">
+                        <i class="fas fa-${tv.is_paused ? 'play' : 'pause'}"></i>
+                    </button>
+                </div>
             </div>
             
             <div class="tv-card-actions">
-                <button class="btn-tv-action btn-view" onclick="viewTV(${tv.id})">
-                    <i class="fas fa-eye"></i> Xem
-                </button>
-                <button class="btn-tv-action btn-reload" onclick="forceReloadTV(${tv.id}, '${escapeHtml(tv.name)}')" title="Ép tải lại TV từ xa">
-                    <i class="fas fa-sync-alt"></i> Tải lại
-                </button>
-                <button class="btn-tv-action btn-pause ${tv.is_paused ? 'active' : ''}" onclick="togglePauseTV(${tv.id}, '${escapeHtml(tv.name)}')" title="${tv.is_paused ? 'Tiếp tục chiếu' : 'Tạm dừng - Chế độ chờ'}">
-                    <i class="fas fa-${tv.is_paused ? 'play' : 'pause'}"></i> ${tv.is_paused ? 'Tiếp tục' : 'Tạm dừng'}
-                </button>
                 <button class="btn-tv-action btn-assign" onclick="assignWCBToTV(${tv.id})">
                     <i class="fas fa-plus-circle"></i> Gán WCB
                 </button>
                 <button class="btn-tv-action btn-edit" onclick="editTV(${tv.id})">
-                    <i class="fas fa-edit"></i> Sửa
+                    <i class="fas fa-cog"></i> Cài đặt
                 </button>
             </div>
         </div>
