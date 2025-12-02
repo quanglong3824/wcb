@@ -37,8 +37,10 @@
         heartbeatTimer: null,
         reloadCheckTimer: null,
         reloadSignalTimer: null,
+        fullscreenCheckTimer: null,
         lastContentHash: '',
         lastReloadTimestamp: 0,
+        lastFullscreenTimestamp: 0,
         isTransitioning: false,
         initTime: 0
     };
@@ -67,6 +69,9 @@
         // Start reload signal checker (backup for old TVs)
         startReloadSignalChecker();
         
+        // Start fullscreen signal checker
+        startFullscreenChecker();
+        
         // Setup content refresh
         state.contentRefreshTimer = setInterval(loadContent, CONFIG.CONTENT_REFRESH);
         
@@ -77,6 +82,11 @@
         if (typeof document.hidden !== 'undefined') {
             document.addEventListener('visibilitychange', handleVisibilityChange);
         }
+        
+        // Auto fullscreen on load (for TV displays)
+        setTimeout(function() {
+            tryAutoFullscreen();
+        }, 2000);
     }
     
     // Load initial reload timestamp from server
@@ -375,6 +385,71 @@
         };
         
         xhr.send();
+    }
+    
+    // Fullscreen signal checker
+    function startFullscreenChecker() {
+        checkFullscreenSignal();
+        state.fullscreenCheckTimer = setInterval(checkFullscreenSignal, 5000);
+    }
+    
+    function checkFullscreenSignal() {
+        var xhr = new XMLHttpRequest();
+        var basePath = getBasePath();
+        var url = basePath + 'api/check-fullscreen-signal.php?tv_id=' + state.tvId + '&t=' + Date.now();
+        
+        xhr.open('GET', url, true);
+        xhr.timeout = 5000;
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                try {
+                    var data = JSON.parse(xhr.responseText);
+                    if (data.success && data.timestamp) {
+                        var serverTimestamp = parseInt(data.timestamp, 10) || 0;
+                        
+                        if (serverTimestamp > state.lastFullscreenTimestamp && 
+                            serverTimestamp * 1000 > state.initTime) {
+                            console.log('[TV Player] Fullscreen signal detected!');
+                            state.lastFullscreenTimestamp = serverTimestamp;
+                            tryAutoFullscreen();
+                        }
+                    }
+                } catch (e) {
+                    console.error('[TV Player] Error checking fullscreen signal:', e);
+                }
+            }
+        };
+        
+        xhr.send();
+    }
+    
+    // Try to enter fullscreen mode
+    function tryAutoFullscreen() {
+        var elem = document.documentElement;
+        
+        // Check if already fullscreen
+        if (document.fullscreenElement || document.webkitFullscreenElement || 
+            document.mozFullScreenElement || document.msFullscreenElement) {
+            console.log('[TV Player] Already in fullscreen');
+            return;
+        }
+        
+        console.log('[TV Player] Attempting fullscreen...');
+        
+        try {
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.mozRequestFullScreen) {
+                elem.mozRequestFullScreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
+        } catch (e) {
+            console.log('[TV Player] Fullscreen request failed:', e);
+        }
     }
     
     // Reload page

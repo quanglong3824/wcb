@@ -421,6 +421,56 @@ function refreshTVs() {
     loadTVs();
 }
 
+// Force Fullscreen All TVs - Gửi lệnh fullscreen đến tất cả TV
+function forceFullscreenAllTVs() {
+    if (!confirm('Bạn có chắc muốn ép TẤT CẢ 7 TV vào chế độ toàn màn hình?\n\nTV sẽ tự động chuyển sang fullscreen và hiển thị WCB.')) {
+        return;
+    }
+    
+    const btn = event.target.closest('.btn-fullscreen-all');
+    if (!btn) return;
+    
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang gửi...';
+    btn.disabled = true;
+    
+    fetch('api/fullscreen-all-tvs.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('Đã gửi lệnh fullscreen đến tất cả TV!', 'success');
+            
+            // Countdown
+            let countdown = 3;
+            const countdownInterval = setInterval(() => {
+                btn.innerHTML = `<i class="fas fa-clock"></i> ${countdown}s`;
+                countdown--;
+                
+                if (countdown < 0) {
+                    clearInterval(countdownInterval);
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                }
+            }, 1000);
+        } else {
+            showMessage('Lỗi: ' + data.message, 'error');
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Có lỗi xảy ra!', 'error');
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+    });
+}
+
 // Refresh Data using AJAX - No page reload, smooth update
 function refreshDataAjax() {
     const btn = event.target.closest('.btn-refresh-data');

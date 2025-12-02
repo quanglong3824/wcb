@@ -28,6 +28,9 @@ include 'includes/sidebar.php';
                 <button class="btn-special btn-refresh-data" onclick="refreshDataAjax()" title="Tải lại dữ liệu (không reload trang)">
                     <i class="fas fa-redo"></i> Làm mới
                 </button>
+                <button class="btn-special btn-fullscreen-all" onclick="forceFullscreenAllTVs()" title="Ép tất cả TV vào chế độ toàn màn hình">
+                    <i class="fas fa-expand-arrows-alt"></i> Fullscreen All
+                </button>
                 <button class="btn-special btn-orchid" onclick="openOrchidMode()" title="Gán 1 WCB cho 6 TV (trừ Restaurant)">
                     <i class="fas fa-layer-group"></i> Chế độ Orchid
                 </button>
