@@ -18,13 +18,13 @@ $menuItems = [
         'active' => ($currentPage == 'index.php' && empty($currentParam)),
         'module' => 'dashboard'
     ],
-    [
-        'icon' => 'fas fa-desktop',
-        'label' => 'Giám sát TV',
-        'url' => $basePath . 'view.php',
-        'active' => ($currentPage == 'view.php'),
-        'module' => 'tv_monitor'
-    ],
+    // [
+    //     'icon' => 'fas fa-desktop',
+    //     'label' => 'Giám sát TV',
+    //     'url' => $basePath . 'view.php',
+    //     'active' => ($currentPage == 'view.php'),
+    //     'module' => 'tv_monitor'
+    // ],
     [
         'icon' => 'fas fa-tv',
         'label' => 'Quản lý TV',
@@ -32,13 +32,13 @@ $menuItems = [
         'active' => ($currentPage == 'tv.php'),
         'module' => 'tv_manage'
     ],
-    [
-        'icon' => 'fas fa-image',
-        'label' => 'Quản lý WCB',
-        'url' => $basePath . 'manage-wcb.php',
-        'active' => ($currentPage == 'manage-wcb.php'),
-        'module' => 'wcb_manage'
-    ],
+    // [
+    //     'icon' => 'fas fa-image',
+    //     'label' => 'Quản lý WCB',
+    //     'url' => $basePath . 'manage-wcb.php',
+    //     'active' => ($currentPage == 'manage-wcb.php'),
+    //     'module' => 'wcb_manage'
+    // ],
     [
         'icon' => 'fas fa-cloud-upload-alt',
         'label' => 'Upload',
@@ -46,20 +46,20 @@ $menuItems = [
         'active' => ($currentPage == 'uploads.php'),
         'module' => 'upload'
     ],
-    [
-        'icon' => 'fas fa-calendar-alt',
-        'label' => 'Lịch chiếu',
-        'url' => $basePath . 'schedule.php',
-        'active' => ($currentPage == 'schedule.php'),
-        'module' => 'schedule'
-    ],
-    [
-        'icon' => 'fas fa-cog',
-        'label' => 'Cài đặt',
-        'url' => $basePath . 'settings.php',
-        'active' => ($currentPage == 'settings.php'),
-        'module' => 'settings'
-    ]
+    // [
+    //     'icon' => 'fas fa-calendar-alt',
+    //     'label' => 'Lịch chiếu',
+    //     'url' => $basePath . 'schedule.php',
+    //     'active' => ($currentPage == 'schedule.php'),
+    //     'module' => 'schedule'
+    // ],
+    // [
+    //     'icon' => 'fas fa-cog',
+    //     'label' => 'Cài đặt',
+    //     'url' => $basePath . 'settings.php',
+    //     'active' => ($currentPage == 'settings.php'),
+    //     'module' => 'settings'
+    // ]
 ];
 
 // Admin menu items - hiển thị cho tất cả nhưng readonly cho non-admin
