@@ -28,6 +28,9 @@ include 'includes/sidebar.php';
                 <button class="btn-special btn-refresh-data" onclick="refreshDataAjax()" title="Tải lại dữ liệu (không reload trang)">
                     <i class="fas fa-redo"></i> Làm mới
                 </button>
+                <button class="btn-special btn-test-mode" onclick="toggleTestModeAllTVs()" title="Bật/tắt chế độ test trên tất cả TV">
+                    <i class="fas fa-vial"></i> Test Mode
+                </button>
                 <button class="btn-special btn-fullscreen-all" onclick="forceFullscreenAllTVs()" title="Ép tất cả TV vào chế độ toàn màn hình">
                     <i class="fas fa-expand-arrows-alt"></i> Fullscreen All
                 </button>

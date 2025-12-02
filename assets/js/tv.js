@@ -421,6 +421,57 @@ function refreshTVs() {
     loadTVs();
 }
 
+// Toggle Test Mode All TVs - Bật/tắt chế độ test overlay trên tất cả TV
+function toggleTestModeAllTVs() {
+    const btn = document.querySelector('.btn-test-mode');
+    if (!btn) return;
+    
+    const isActive = btn.classList.contains('active');
+    const action = isActive ? 'off' : 'on';
+    const confirmMsg = isActive 
+        ? 'Bạn có chắc muốn TẮT chế độ test trên tất cả TV?' 
+        : 'Bạn có chắc muốn BẬT chế độ test trên tất cả TV?\n\nOverlay "TEST" sẽ hiển thị trên tất cả màn hình TV.';
+    
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+    
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang gửi...';
+    btn.disabled = true;
+    
+    fetch('api/toggle-test-mode.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: action })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (action === 'on') {
+                btn.classList.add('active');
+                btn.innerHTML = '<i class="fas fa-vial"></i> Test Mode (ON)';
+                showMessage('Đã BẬT chế độ test trên tất cả TV!', 'success');
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = '<i class="fas fa-vial"></i> Test Mode';
+                showMessage('Đã TẮT chế độ test trên tất cả TV!', 'success');
+            }
+            btn.disabled = false;
+        } else {
+            showMessage('Lỗi: ' + data.message, 'error');
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Có lỗi xảy ra!', 'error');
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+    });
+}
+
 // Force Fullscreen All TVs - Gửi lệnh fullscreen và reload đến tất cả TV
 function forceFullscreenAllTVs() {
     if (!confirm('Bạn có chắc muốn ép TẤT CẢ 7 TV vào chế độ toàn màn hình?\n\nTV sẽ tự động chuyển sang fullscreen và hiển thị WCB full màn hình.')) {

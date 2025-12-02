@@ -38,9 +38,12 @@
         reloadCheckTimer: null,
         reloadSignalTimer: null,
         fullscreenCheckTimer: null,
+        testModeCheckTimer: null,
         lastContentHash: '',
         lastReloadTimestamp: 0,
         lastFullscreenTimestamp: 0,
+        lastTestModeTimestamp: 0,
+        testModeActive: false,
         isTransitioning: false,
         initTime: 0
     };
@@ -71,6 +74,9 @@
         
         // Start fullscreen signal checker
         startFullscreenChecker();
+        
+        // Start test mode checker
+        startTestModeChecker();
         
         // Setup content refresh
         state.contentRefreshTimer = setInterval(loadContent, CONFIG.CONTENT_REFRESH);
@@ -424,6 +430,68 @@
         };
         
         xhr.send();
+    }
+    
+    // Test mode checker
+    function startTestModeChecker() {
+        checkTestMode();
+        state.testModeCheckTimer = setInterval(checkTestMode, 3000);
+    }
+    
+    function checkTestMode() {
+        var xhr = new XMLHttpRequest();
+        var basePath = getBasePath();
+        var url = basePath + 'api/check-test-mode.php?t=' + Date.now();
+        
+        xhr.open('GET', url, true);
+        xhr.timeout = 5000;
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                try {
+                    var data = JSON.parse(xhr.responseText);
+                    if (data.success) {
+                        if (data.test_mode && !state.testModeActive) {
+                            showTestOverlay();
+                            state.testModeActive = true;
+                        } else if (!data.test_mode && state.testModeActive) {
+                            hideTestOverlay();
+                            state.testModeActive = false;
+                        }
+                    }
+                } catch (e) {
+                    console.error('[TV Player] Error checking test mode:', e);
+                }
+            }
+        };
+        
+        xhr.send();
+    }
+    
+    function showTestOverlay() {
+        // Remove existing overlay if any
+        hideTestOverlay();
+        
+        var overlay = document.createElement('div');
+        overlay.id = 'test-mode-overlay';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:9998;display:flex;align-items:center;justify-content:center;pointer-events:none;';
+        
+        var text = document.createElement('div');
+        text.style.cssText = 'font-size:15vw;font-weight:bold;color:rgba(255,255,255,0.15);text-transform:uppercase;letter-spacing:20px;text-shadow:0 0 50px rgba(255,255,255,0.1);transform:rotate(-15deg);';
+        text.innerHTML = 'TEST';
+        
+        overlay.appendChild(text);
+        document.body.appendChild(overlay);
+        
+        console.log('[TV Player] Test mode overlay shown');
+    }
+    
+    function hideTestOverlay() {
+        var overlay = document.getElementById('test-mode-overlay');
+        if (overlay) {
+            overlay.remove();
+            console.log('[TV Player] Test mode overlay hidden');
+        }
     }
     
     // Try to enter fullscreen mode
