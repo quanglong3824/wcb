@@ -41,9 +41,9 @@ if ($result->num_rows === 1) {
         // Đăng nhập thành công
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
-        $_SESSION['full_name'] = $user['full_name'];
-        $_SESSION['user_role'] = $user['role'];
-        $_SESSION['user_email'] = $user['email'];
+        $_SESSION['full_name'] = $user['full_name'] ?? $user['username'];
+        $_SESSION['user_role'] = !empty($user['role']) ? $user['role'] : 'content_manager';
+        $_SESSION['user_email'] = $user['email'] ?? '';
         
         // Cập nhật last_login
         $updateStmt = $conn->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");

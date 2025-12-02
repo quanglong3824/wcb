@@ -49,12 +49,17 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['username'])) {
 }
 
 // Validate session data
-if (empty($_SESSION['user_id']) || empty($_SESSION['username']) || empty($_SESSION['user_role'])) {
+if (empty($_SESSION['user_id']) || empty($_SESSION['username'])) {
     // Invalid session, destroy and redirect
     session_destroy();
     $loginUrl = getLoginUrl();
     header("Location: {$loginUrl}?error=invalid_session");
     exit;
+}
+
+// Set default role if not set
+if (empty($_SESSION['user_role'])) {
+    $_SESSION['user_role'] = 'content_manager';
 }
 
 // Optional: Check session timeout (30 minutes of inactivity)
