@@ -53,6 +53,12 @@ function setupEventListeners() {
 async function loadUsers() {
     try {
         const response = await fetch('api/logs.php?get_users=1');
+        
+        // Bỏ qua nếu không có quyền
+        if (response.status === 403) {
+            return;
+        }
+        
         const data = await response.json();
         
         if (data.success) {
@@ -99,6 +105,14 @@ async function loadLogs() {
         });
         
         const response = await fetch(`api/logs.php?${params}`);
+        
+        // Xử lý lỗi 403
+        if (response.status === 403) {
+            const data = await response.json();
+            showPermissionError(data.message || 'Không có quyền xem Activity Logs');
+            return;
+        }
+        
         const data = await response.json();
         
         if (data.success) {
@@ -113,6 +127,22 @@ async function loadLogs() {
         console.error('Error loading logs:', error);
         showError('Lỗi kết nối server');
     }
+}
+
+// Show permission error
+function showPermissionError(message) {
+    const tbody = document.getElementById('logsTableBody');
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="7">
+                <div class="permission-error">
+                    <i class="fas fa-lock"></i>
+                    <h3>403 - Không có quyền</h3>
+                    <p>${message}</p>
+                </div>
+            </td>
+        </tr>
+    `;
 }
 
 // Render logs table

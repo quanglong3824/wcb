@@ -10,8 +10,10 @@
 // =====================================================
 
 // Phát hiện môi trường (localhost hoặc host)
-$isLocalhost = in_array($_SERVER['HTTP_HOST'], ['localhost', '127.0.0.1', '::1']) 
-               || strpos($_SERVER['HTTP_HOST'], 'localhost') !== false;
+$httpHost = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
+$isLocalhost = in_array($httpHost, ['localhost', '127.0.0.1', '::1']) 
+               || strpos($httpHost, 'localhost') !== false
+               || strpos($httpHost, '127.0.0.1') !== false;
 
 // Cấu hình cho LOCALHOST
 define('DB_LOCAL_HOST', 'localhost');

@@ -5,25 +5,26 @@
  */
 require_once 'includes/auth-check.php';
 require_once 'config/php/config.php';
-
-// Chỉ super_admin mới được truy cập
-if ($_SESSION['user_role'] !== 'super_admin') {
-    header('Location: index.php');
-    exit;
-}
+require_once 'includes/permissions.php';
 
 // Xác định base path
 $basePath = './';
 $pageTitle = 'Activity Logs - Welcome Board System';
+$currentModule = 'logs';
+
+$isReadonly = isReadOnly('logs');
 
 // Include header
 include 'includes/header.php';
 include 'includes/sidebar.php';
+
 ?>
 
 <!-- Main Content -->
 <main class="main-content">
     <link rel="stylesheet" href="assets/css/logs.css">
+    
+    <?php include 'includes/permission-bar.php'; ?>
     
     <div class="page-header">
         <div class="page-header-left">

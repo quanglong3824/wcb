@@ -5,11 +5,14 @@
  */
 require_once '../includes/auth-check.php';
 require_once '../config/php/config.php';
+require_once '../includes/permissions.php';
 
-// Chỉ super_admin mới được truy cập
-if ($_SESSION['user_role'] !== 'super_admin') {
+header('Content-Type: application/json');
+
+// Kiểm tra quyền xem logs
+if (!hasPermission('logs', PERM_VIEW)) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Không có quyền truy cập']);
+    echo json_encode(['success' => false, 'message' => 'Không có quyền xem Activity Logs']);
     exit;
 }
 
@@ -47,7 +50,6 @@ $conn->close();
  * Get logs with pagination
  */
 function getLogs($conn) {
-    header('Content-Type: application/json');
     
     $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
     $limit = isset($_GET['limit']) ? min(100, max(1, intval($_GET['limit']))) : 20;

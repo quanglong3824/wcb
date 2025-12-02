@@ -18,7 +18,8 @@ if (!file_exists($lockFile)) {
         } else {
             $needsInstall = true;
         }
-        $conn->close();
+        // Không đóng connection vì sử dụng static connection
+        // $conn->close();
     } else {
         $needsInstall = true;
     }

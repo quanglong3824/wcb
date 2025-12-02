@@ -1,10 +1,15 @@
 <?php
 require_once 'includes/auth-check.php';
 require_once 'config/php/config.php';
+require_once 'includes/permissions.php';
 
 // Xác định base path
 $basePath = './';
 $pageTitle = 'Cài đặt - Welcome Board System';
+$currentModule = 'settings';
+
+$canEdit = hasPermission('settings', PERM_EDIT);
+$isReadonly = isReadOnly('settings');
 
 // Include header
 include 'includes/header.php';
@@ -14,6 +19,8 @@ include 'includes/sidebar.php';
 <!-- Main Content -->
 <main class="main-content">
     <link rel="stylesheet" href="assets/css/settings.css">
+    
+    <?php include 'includes/permission-bar.php'; ?>
     
     <div class="settings-container">
         <!-- Header -->

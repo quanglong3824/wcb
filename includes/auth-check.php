@@ -25,7 +25,8 @@ if (!file_exists($lockFile)) {
             @file_put_contents($lockFile, date('Y-m-d H:i:s'));
             $needsInstall = false;
         }
-        $conn->close();
+        // Không đóng connection ở đây vì sử dụng static connection
+        // $conn->close();
     }
     
     if ($needsInstall) {

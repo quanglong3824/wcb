@@ -113,7 +113,8 @@ try {
     ]);
 }
 
-$conn->close();
+// Không đóng static connection
+// $conn->close();
 
 // Helper function
 function timeAgo($datetime) {

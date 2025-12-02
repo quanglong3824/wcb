@@ -5,16 +5,19 @@
  */
 require_once 'includes/auth-check.php';
 require_once 'config/php/config.php';
-
-// Chỉ super_admin mới được truy cập
-if ($_SESSION['user_role'] !== 'super_admin') {
-    header('Location: index.php');
-    exit;
-}
+require_once 'includes/permissions.php';
 
 // Xác định base path
 $basePath = './';
 $pageTitle = 'Quản lý người dùng - Welcome Board System';
+$currentModule = 'users';
+
+// Kiểm tra quyền xem
+$canView = hasPermission('users', PERM_VIEW);
+$canCreate = hasPermission('users', PERM_CREATE);
+$canEdit = hasPermission('users', PERM_EDIT);
+$canDelete = hasPermission('users', PERM_DELETE);
+$isReadonly = isReadOnly('users');
 
 // Include header
 include 'includes/header.php';
@@ -24,6 +27,41 @@ include 'includes/sidebar.php';
 <!-- Main Content -->
 <main class="main-content">
     <link rel="stylesheet" href="assets/css/users.css">
+    <style>
+        /* Override for modal display */
+        #userModal.active,
+        #deleteModal.active,
+        #resetPasswordModal.active {
+            display: flex !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            z-index: 999999 !important;
+            background: rgba(0, 0, 0, 0.5) !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        #userModal .modal,
+        #deleteModal .modal,
+        #resetPasswordModal .modal {
+            display: block !important;
+            position: relative !important;
+            background: white !important;
+            border: 3px solid #d4af37 !important;
+            max-width: 600px !important;
+            width: 100% !important;
+            max-height: 90vh !important;
+            overflow-y: auto !important;
+        }
+        #deleteModal .modal,
+        #resetPasswordModal .modal {
+            max-width: 450px !important;
+        }
+    </style>
+    
+    <?php include 'includes/permission-bar.php'; ?>
     
     <div class="page-header">
         <div class="page-header-left">
@@ -31,9 +69,15 @@ include 'includes/sidebar.php';
             <p>Thêm, sửa, xóa và phân quyền người dùng hệ thống</p>
         </div>
         <div class="page-header-right">
+            <?php if ($canCreate): ?>
             <button class="btn btn-primary" onclick="openAddUserModal()">
                 <i class="fas fa-plus"></i> Thêm người dùng
             </button>
+            <?php else: ?>
+            <button class="btn btn-primary" disabled title="Bạn không có quyền thêm người dùng">
+                <i class="fas fa-plus"></i> Thêm người dùng
+            </button>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -179,7 +223,8 @@ include 'includes/sidebar.php';
                 <div class="form-row">
                     <div class="form-group">
                         <label for="role">Vai trò *</label>
-                        <select id="role" name="role" required>
+                        <select id="role" name="role" required onchange="toggleCustomPermissions()">
+                            <option value="user">User (Chỉ xem)</option>
                             <option value="content_manager">Content Manager</option>
                             <option value="super_admin">Super Admin</option>
                         </select>
@@ -190,6 +235,66 @@ include 'includes/sidebar.php';
                             <option value="active">Đang hoạt động</option>
                             <option value="inactive">Đã khóa</option>
                         </select>
+                    </div>
+                </div>
+                
+                <!-- Custom Permissions Section -->
+                <div id="customPermissionsSection" class="permissions-section" style="display: none;">
+                    <div class="permissions-header">
+                        <h4><i class="fas fa-shield-alt"></i> Phân quyền chi tiết</h4>
+                        <label class="use-custom-toggle">
+                            <input type="checkbox" id="useCustomPermissions" name="use_custom" onchange="togglePermissionsTable()">
+                            <span>Tùy chỉnh quyền</span>
+                        </label>
+                    </div>
+                    
+                    <div id="permissionsTable" class="permissions-table" style="display: none;">
+                        <div class="permissions-note">
+                            <i class="fas fa-info-circle"></i>
+                            Chọn các quyền cho từng chức năng. Nếu không tùy chỉnh, sẽ sử dụng quyền mặc định của vai trò.
+                        </div>
+                        
+                        <table class="perm-table">
+                            <thead>
+                                <tr>
+                                    <th>Chức năng</th>
+                                    <th><i class="fas fa-eye"></i> Xem</th>
+                                    <th><i class="fas fa-plus"></i> Tạo</th>
+                                    <th><i class="fas fa-edit"></i> Sửa</th>
+                                    <th><i class="fas fa-trash"></i> Xóa</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php 
+                                global $ALL_MODULES;
+                                foreach ($ALL_MODULES as $moduleKey => $moduleInfo): 
+                                    if ($moduleKey === 'profile') continue; // Skip profile
+                                ?>
+                                <tr>
+                                    <td>
+                                        <i class="<?php echo $moduleInfo['icon']; ?>"></i>
+                                        <?php echo $moduleInfo['name']; ?>
+                                    </td>
+                                    <td><input type="checkbox" name="perm[<?php echo $moduleKey; ?>][view]" value="1" checked></td>
+                                    <td><input type="checkbox" name="perm[<?php echo $moduleKey; ?>][create]" value="1"></td>
+                                    <td><input type="checkbox" name="perm[<?php echo $moduleKey; ?>][edit]" value="1"></td>
+                                    <td><input type="checkbox" name="perm[<?php echo $moduleKey; ?>][delete]" value="1"></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        
+                        <div class="permissions-actions">
+                            <button type="button" class="btn-sm" onclick="selectAllPermissions()">
+                                <i class="fas fa-check-double"></i> Chọn tất cả
+                            </button>
+                            <button type="button" class="btn-sm" onclick="clearAllPermissions()">
+                                <i class="fas fa-times"></i> Bỏ chọn tất cả
+                            </button>
+                            <button type="button" class="btn-sm" onclick="applyRoleDefaults()">
+                                <i class="fas fa-undo"></i> Theo vai trò
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -257,6 +362,19 @@ include 'includes/sidebar.php';
         </div>
     </div>
 </div>
+
+<!-- Current user ID and Permissions for JS -->
+<div data-current-user-id="<?php echo $_SESSION['user_id']; ?>" style="display:none;"></div>
+<script>
+    // Pass permissions to JavaScript
+    window.userPermissions = {
+        canView: <?php echo $canView ? 'true' : 'false'; ?>,
+        canCreate: <?php echo $canCreate ? 'true' : 'false'; ?>,
+        canEdit: <?php echo $canEdit ? 'true' : 'false'; ?>,
+        canDelete: <?php echo $canDelete ? 'true' : 'false'; ?>,
+        isReadonly: <?php echo $isReadonly ? 'true' : 'false'; ?>
+    };
+</script>
 
 <script src="assets/js/users.js"></script>
 

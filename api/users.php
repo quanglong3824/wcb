@@ -5,13 +5,45 @@
  */
 require_once '../includes/auth-check.php';
 require_once '../config/php/config.php';
+require_once '../includes/permissions.php';
 
 header('Content-Type: application/json');
 
-// Chỉ super_admin mới được truy cập
-if ($_SESSION['user_role'] !== 'super_admin') {
+// Kiểm tra quyền dựa trên method
+$method = $_SERVER['REQUEST_METHOD'];
+
+// GET - cần quyền view
+if ($method === 'GET' && !hasPermission('users', PERM_VIEW)) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Không có quyền truy cập']);
+    echo json_encode(['success' => false, 'message' => 'Không có quyền xem danh sách người dùng']);
+    exit;
+}
+
+// POST - cần quyền create
+if ($method === 'POST' && !isset($_GET['action']) && !hasPermission('users', PERM_CREATE)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Không có quyền tạo người dùng']);
+    exit;
+}
+
+// POST reset_password - cần quyền edit
+if ($method === 'POST' && isset($_GET['action']) && $_GET['action'] === 'reset_password' && !hasPermission('users', PERM_EDIT)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Không có quyền đặt lại mật khẩu']);
+    exit;
+}
+
+// PUT - cần quyền edit
+if ($method === 'PUT' && !hasPermission('users', PERM_EDIT)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Không có quyền chỉnh sửa người dùng']);
+    exit;
+}
+
+// DELETE - cần quyền delete
+if ($method === 'DELETE' && !hasPermission('users', PERM_DELETE)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Không có quyền xóa người dùng']);
     exit;
 }
 
@@ -26,7 +58,11 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 switch ($method) {
     case 'GET':
-        getUsers($conn);
+        if (isset($_GET['action']) && $_GET['action'] === 'get_permissions') {
+            getUserPermissions($conn);
+        } else {
+            getUsers($conn);
+        }
         break;
     case 'POST':
         if (isset($_GET['action']) && $_GET['action'] === 'reset_password') {
@@ -194,6 +230,11 @@ function createUser($conn) {
     if ($stmt->execute()) {
         $userId = $stmt->insert_id;
         
+        // Save custom permissions if provided
+        if (isset($data['custom_permissions']) && $data['custom_permissions'] !== null && $role !== 'super_admin') {
+            saveUserPermissions($conn, $userId, $data['custom_permissions']);
+        }
+        
         // Log activity
         logActivity($conn, 'create_user', 'user', $userId, "Tạo người dùng: {$username}");
         
@@ -291,6 +332,17 @@ function updateUser($conn) {
     $stmt->bind_param($types, ...$params);
     
     if ($stmt->execute()) {
+        // Save custom permissions if provided
+        $userRole = isset($data['role']) ? $data['role'] : null;
+        if (isset($data['custom_permissions'])) {
+            if ($data['custom_permissions'] === null || $userRole === 'super_admin') {
+                // Clear custom permissions
+                saveUserPermissions($conn, $id, []);
+            } else {
+                saveUserPermissions($conn, $id, $data['custom_permissions']);
+            }
+        }
+        
         // Log activity
         logActivity($conn, 'update_user', 'user', $id, "Cập nhật người dùng: {$existingUser['username']}");
         
@@ -422,4 +474,69 @@ function logActivity($conn, $action, $entityType, $entityId, $description) {
     } catch (Exception $e) {
         error_log("Activity log error: " . $e->getMessage());
     }
+}
+
+/**
+ * Get user permissions
+ */
+function getUserPermissions($conn) {
+    $userId = isset($_GET['id']) ? intval($_GET['id']) : 0;
+    
+    if ($userId <= 0) {
+        echo json_encode(['success' => false, 'message' => 'ID không hợp lệ']);
+        return;
+    }
+    
+    $stmt = $conn->prepare("SELECT module, can_view, can_create, can_edit, can_delete FROM user_permissions WHERE user_id = ?");
+    $stmt->bind_param("i", $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $permissions = [];
+    while ($row = $result->fetch_assoc()) {
+        $perms = [];
+        if ($row['can_view']) $perms[] = 'view';
+        if ($row['can_create']) $perms[] = 'create';
+        if ($row['can_edit']) $perms[] = 'edit';
+        if ($row['can_delete']) $perms[] = 'delete';
+        $permissions[$row['module']] = $perms;
+    }
+    
+    echo json_encode([
+        'success' => true,
+        'permissions' => $permissions
+    ]);
+}
+
+/**
+ * Save user permissions
+ */
+function saveUserPermissions($conn, $userId, $permissions) {
+    if (empty($permissions)) {
+        // Delete all custom permissions
+        $stmt = $conn->prepare("DELETE FROM user_permissions WHERE user_id = ?");
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        return true;
+    }
+    
+    // Delete old permissions
+    $stmt = $conn->prepare("DELETE FROM user_permissions WHERE user_id = ?");
+    $stmt->bind_param("i", $userId);
+    $stmt->execute();
+    
+    // Insert new permissions
+    $stmt = $conn->prepare("INSERT INTO user_permissions (user_id, module, can_view, can_create, can_edit, can_delete) VALUES (?, ?, ?, ?, ?, ?)");
+    
+    foreach ($permissions as $module => $perms) {
+        $canView = in_array('view', $perms) ? 1 : 0;
+        $canCreate = in_array('create', $perms) ? 1 : 0;
+        $canEdit = in_array('edit', $perms) ? 1 : 0;
+        $canDelete = in_array('delete', $perms) ? 1 : 0;
+        
+        $stmt->bind_param("isiiii", $userId, $module, $canView, $canCreate, $canEdit, $canDelete);
+        $stmt->execute();
+    }
+    
+    return true;
 }
