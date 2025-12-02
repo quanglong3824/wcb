@@ -474,20 +474,17 @@
         
         var overlay = document.createElement('div');
         overlay.id = 'test-mode-overlay';
-        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9998;pointer-events:none;border:8px solid #ff0000;box-sizing:border-box;';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9998;pointer-events:none;';
         
-        // Corner badges
-        var corners = ['top:20px;left:20px;', 'top:20px;right:20px;', 'bottom:20px;left:20px;', 'bottom:20px;right:20px;'];
-        corners.forEach(function(pos) {
-            var badge = document.createElement('div');
-            badge.style.cssText = 'position:absolute;' + pos + 'background:#ff0000;color:#fff;padding:10px 20px;font-size:18px;font-weight:bold;border-radius:5px;text-transform:uppercase;letter-spacing:2px;box-shadow:0 2px 10px rgba(0,0,0,0.5);';
-            badge.innerHTML = '⚠ TEST MODE';
-            overlay.appendChild(badge);
-        });
+        // Top banner - friendly style
+        var banner = document.createElement('div');
+        banner.style.cssText = 'position:absolute;top:15px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:8px 25px;font-size:14px;font-weight:600;border-radius:20px;box-shadow:0 4px 15px rgba(102,126,234,0.4);display:flex;align-items:center;gap:8px;';
+        banner.innerHTML = '<span style="font-size:16px;">🔧</span> Chế độ kiểm tra';
+        overlay.appendChild(banner);
         
-        // Center watermark
+        // Center watermark - soft style
         var text = document.createElement('div');
-        text.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-15deg);font-size:12vw;font-weight:bold;color:rgba(255,0,0,0.25);text-transform:uppercase;letter-spacing:20px;text-shadow:0 0 30px rgba(255,0,0,0.3);';
+        text.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-12deg);font-size:10vw;font-weight:bold;color:rgba(102,126,234,0.12);text-transform:uppercase;letter-spacing:15px;';
         text.innerHTML = 'TEST';
         
         overlay.appendChild(text);
