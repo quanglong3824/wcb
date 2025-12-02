@@ -474,7 +474,7 @@
         
         var overlay = document.createElement('div');
         overlay.id = 'test-mode-overlay';
-        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9998;pointer-events:none;';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9998;pointer-events:none;box-shadow:inset 0 0 80px 20px rgba(255,0,0,0.3);';
         
         // Top banner - friendly style
         var banner = document.createElement('div');
