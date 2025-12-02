@@ -25,6 +25,9 @@ include 'includes/sidebar.php';
                 <p>Quản lý 7 màn hình TV tại các vị trí trong khách sạn</p>
             </div>
             <div class="special-modes">
+                <button class="btn-special btn-refresh-data" onclick="refreshDataAjax()" title="Tải lại dữ liệu (không reload trang)">
+                    <i class="fas fa-redo"></i> Làm mới
+                </button>
                 <button class="btn-special btn-orchid" onclick="openOrchidMode()" title="Gán 1 WCB cho 6 TV (trừ Restaurant)">
                     <i class="fas fa-layer-group"></i> Chế độ Orchid
                 </button>

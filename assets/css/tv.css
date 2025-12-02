@@ -169,6 +169,17 @@
     color: var(--danger-500);
 }
 
+.btn-refresh-data {
+    background: #6366f1;
+    color: white;
+    border-color: #6366f1;
+}
+
+.btn-refresh-data:hover {
+    background: transparent;
+    color: #6366f1;
+}
+
 .btn-reload-all {
     background: #3b82f6;
     color: white;
@@ -712,6 +723,27 @@
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
+}
+
+.btn-pause {
+    background: #f59e0b;
+    color: white;
+    border-color: #f59e0b;
+}
+
+.btn-pause:hover {
+    background: transparent;
+    color: #d97706;
+}
+
+.btn-pause.active {
+    background: #10b981;
+    border-color: #10b981;
+}
+
+.btn-pause.active:hover {
+    background: transparent;
+    color: #059669;
 }
 
 /* Empty State */

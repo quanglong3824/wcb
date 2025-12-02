@@ -33,7 +33,7 @@ if ($tvId <= 0) {
 }
 
 // Get TV info
-$tvStmt = $conn->prepare("SELECT id, name, location, folder FROM tvs WHERE id = ?");
+$tvStmt = $conn->prepare("SELECT id, name, location, folder, IFNULL(is_paused, 0) as is_paused FROM tvs WHERE id = ?");
 $tvStmt->bind_param("i", $tvId);
 $tvStmt->execute();
 $tvResult = $tvStmt->get_result();
@@ -45,6 +45,18 @@ if ($tvResult->num_rows === 0) {
 
 $tv = $tvResult->fetch_assoc();
 $content = null;
+
+// Nếu TV đang tạm dừng (chế độ chờ), trả về không có nội dung
+if ($tv['is_paused']) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'TV đang ở chế độ chờ',
+        'paused' => true,
+        'tv' => $tv
+    ]);
+    $conn->close();
+    exit;
+}
 
 // Kiểm tra nếu yêu cầu lấy tất cả nội dung (cho TV Basement slideshow)
 $getAll = isset($_GET['get_all']) && $_GET['get_all'] == '1';

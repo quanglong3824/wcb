@@ -177,6 +177,9 @@ function createTVCard(tv) {
                 <button class="btn-tv-action btn-reload" onclick="forceReloadTV(${tv.id}, '${escapeHtml(tv.name)}')" title="Ép tải lại TV từ xa">
                     <i class="fas fa-sync-alt"></i> Tải lại
                 </button>
+                <button class="btn-tv-action btn-pause ${tv.is_paused ? 'active' : ''}" onclick="togglePauseTV(${tv.id}, '${escapeHtml(tv.name)}')" title="${tv.is_paused ? 'Tiếp tục chiếu' : 'Tạm dừng - Chế độ chờ'}">
+                    <i class="fas fa-${tv.is_paused ? 'play' : 'pause'}"></i> ${tv.is_paused ? 'Tiếp tục' : 'Tạm dừng'}
+                </button>
                 <button class="btn-tv-action btn-assign" onclick="assignWCBToTV(${tv.id})">
                     <i class="fas fa-plus-circle"></i> Gán WCB
                 </button>
@@ -416,6 +419,60 @@ function refreshTVs() {
     
     // Reload data
     loadTVs();
+}
+
+// Refresh Data using AJAX - No page reload, smooth update
+function refreshDataAjax() {
+    const btn = event.target.closest('.btn-refresh-data');
+    if (!btn) return;
+    
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tải...';
+    btn.disabled = true;
+    
+    // Fade out current cards slightly
+    const cards = document.querySelectorAll('.tv-card');
+    cards.forEach(card => {
+        card.style.opacity = '0.6';
+        card.style.transition = 'opacity 0.3s';
+    });
+    
+    // Fetch new data
+    fetch('api/get-tvs.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                allTVs = data.tvs;
+                
+                // Smooth update - fade in new content
+                displayTVs(allTVs);
+                
+                // Animate new cards
+                const newCards = document.querySelectorAll('.tv-card');
+                newCards.forEach((card, index) => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(10px)';
+                    card.style.transition = 'opacity 0.3s, transform 0.3s';
+                    
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, index * 50);
+                });
+                
+                showMessage('Đã cập nhật dữ liệu!', 'success');
+            } else {
+                showMessage('Lỗi: ' + (data.message || 'Không thể tải dữ liệu'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('Có lỗi xảy ra khi tải dữ liệu!', 'error');
+        })
+        .finally(() => {
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+        });
 }
 
 
@@ -745,6 +802,50 @@ function forceReloadTV(tvId, tvName) {
         showMessage('Có lỗi xảy ra khi gửi lệnh tải lại!', 'error');
         btn.innerHTML = originalHTML;
         btn.disabled = false;
+    });
+}
+
+// Toggle Pause TV - Đưa TV về chế độ chờ mà không gỡ WCB
+function togglePauseTV(tvId, tvName) {
+    const tv = allTVs.find(t => t.id == tvId);
+    if (!tv) {
+        alert('Không tìm thấy TV!');
+        return;
+    }
+    
+    const isPaused = tv.is_paused;
+    const action = isPaused ? 'tiếp tục chiếu' : 'tạm dừng';
+    
+    if (!confirm(`Bạn có chắc muốn ${action} "${tvName}"?\n\n${isPaused ? 'TV sẽ tiếp tục hiển thị WCB đã gán.' : 'TV sẽ chuyển sang chế độ chờ (hiển thị logo).\nWCB vẫn được giữ nguyên.'}`)) {
+        return;
+    }
+    
+    // Show loading
+    showMessage(`Đang ${action} "${tvName}"...`, 'info');
+    
+    fetch('api/toggle-pause-tv.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            tv_id: tvId,
+            pause: !isPaused
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(`Đã ${action} "${tvName}" thành công!`, 'success');
+            // Reload TV list to update UI
+            setTimeout(() => loadTVs(), 500);
+        } else {
+            showMessage('Lỗi: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Có lỗi xảy ra!', 'error');
     });
 }
 

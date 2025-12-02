@@ -21,6 +21,7 @@ if ($conn) {
                 t.last_heartbeat,
                 t.current_content_id,
                 t.default_content_id,
+                IFNULL(t.is_paused, 0) as is_paused,
                 m.name as current_content_name,
                 m.type as current_content_type,
                 m.file_path as current_content_path,
