@@ -169,6 +169,31 @@
     color: var(--danger-500);
 }
 
+.btn-reload-all {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.btn-reload-all:hover {
+    background: transparent;
+    color: #3b82f6;
+}
+
+.btn-reload-all i {
+    animation: spin 2s linear infinite;
+    animation-play-state: paused;
+}
+
+.btn-reload-all:hover i {
+    animation-play-state: running;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 /* Controls Section */
 .tv-controls {
     display: flex;

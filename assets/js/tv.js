@@ -188,7 +188,7 @@ function createTVCard(tv) {
     `;
 }
 
-// View TV (open in new tab with fullscreen)
+// View TV (open in new blank tab)
 function viewTV(tvId) {
     const tv = allTVs.find(t => t.id == tvId);
     if (!tv || !tv.folder) {
@@ -196,32 +196,9 @@ function viewTV(tvId) {
         return;
     }
     
-    // Open TV display in new window
+    // Open TV display in new blank tab
     const url = tv.folder + '/index.php';
-    const newWindow = window.open(url, '_blank', 'width=1920,height=1080');
-    
-    // Try to make it fullscreen after a short delay
-    if (newWindow) {
-        setTimeout(() => {
-            try {
-                // Request fullscreen on the new window's document
-                if (newWindow.document.documentElement.requestFullscreen) {
-                    newWindow.document.documentElement.requestFullscreen();
-                } else if (newWindow.document.documentElement.webkitRequestFullscreen) {
-                    newWindow.document.documentElement.webkitRequestFullscreen();
-                } else if (newWindow.document.documentElement.mozRequestFullScreen) {
-                    newWindow.document.documentElement.mozRequestFullScreen();
-                } else if (newWindow.document.documentElement.msRequestFullscreen) {
-                    newWindow.document.documentElement.msRequestFullscreen();
-                }
-            } catch (e) {
-                console.log('Fullscreen request failed:', e);
-                // Fallback: maximize window
-                newWindow.moveTo(0, 0);
-                newWindow.resizeTo(screen.width, screen.height);
-            }
-        }, 1000);
-    }
+    window.open(url, '_blank');
 }
 
 // Edit TV - Open modal with TV data
@@ -1008,6 +985,76 @@ function confirmAssignWCBToTV(tvId) {
             btn.innerHTML = originalText;
             btn.disabled = false;
         });
+}
+
+// Force Reload All TVs - Send reload signal to all 7 TVs
+// Dùng cho TV cũ Samsung/Sony không tự động reload
+function forceReloadAllTVs() {
+    if (!confirm('Bạn có chắc muốn ép tải lại TẤT CẢ 7 TV?\n\nTất cả TV sẽ tự động refresh để cập nhật nội dung mới.\n\nĐây là tính năng dành cho TV cũ (Samsung/Sony) không tự động reload.')) {
+        return;
+    }
+    
+    // Show loading overlay
+    const loadingHTML = `
+        <div id="reloadAllLoading" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; color: white;">
+            <i class="fas fa-sync-alt fa-3x fa-spin" style="color: #3b82f6; margin-bottom: 20px;"></i>
+            <h2>Đang gửi lệnh reload cho tất cả TV...</h2>
+            <p style="margin-top: 10px; opacity: 0.8;">Vui lòng đợi...</p>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', loadingHTML);
+    
+    // Send reload signal to all TVs
+    fetch('api/reload-all-tvs.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const loading = document.getElementById('reloadAllLoading');
+        if (loading) loading.remove();
+        
+        if (data.success) {
+            showMessage(`Đã gửi lệnh tải lại cho ${data.tv_count} TV thành công!`, 'success');
+            
+            // Show countdown for TV reload
+            let countdown = 10;
+            const countdownMsg = document.createElement('div');
+            countdownMsg.className = 'alert-message alert-info';
+            countdownMsg.id = 'reloadCountdown';
+            countdownMsg.innerHTML = `
+                <i class="fas fa-clock"></i>
+                <span>TV sẽ reload trong <strong>${countdown}</strong> giây...</span>
+            `;
+            const container = document.querySelector('.tv-container');
+            container.insertBefore(countdownMsg, container.firstChild);
+            
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                const countdownEl = document.getElementById('reloadCountdown');
+                if (countdownEl) {
+                    countdownEl.querySelector('strong').textContent = countdown;
+                }
+                
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    if (countdownEl) countdownEl.remove();
+                    loadTVs(); // Refresh TV list
+                }
+            }, 1000);
+        } else {
+            showMessage('Lỗi: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        const loading = document.getElementById('reloadAllLoading');
+        if (loading) loading.remove();
+        
+        console.error('Error:', error);
+        showMessage('Có lỗi xảy ra khi gửi lệnh tải lại!', 'error');
+    });
 }
 
 // Unassign media from TV
