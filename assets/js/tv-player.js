@@ -474,10 +474,20 @@
         
         var overlay = document.createElement('div');
         overlay.id = 'test-mode-overlay';
-        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:9998;display:flex;align-items:center;justify-content:center;pointer-events:none;';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9998;pointer-events:none;border:8px solid #ff0000;box-sizing:border-box;';
         
+        // Corner badges
+        var corners = ['top:20px;left:20px;', 'top:20px;right:20px;', 'bottom:20px;left:20px;', 'bottom:20px;right:20px;'];
+        corners.forEach(function(pos) {
+            var badge = document.createElement('div');
+            badge.style.cssText = 'position:absolute;' + pos + 'background:#ff0000;color:#fff;padding:10px 20px;font-size:18px;font-weight:bold;border-radius:5px;text-transform:uppercase;letter-spacing:2px;box-shadow:0 2px 10px rgba(0,0,0,0.5);';
+            badge.innerHTML = '⚠ TEST MODE';
+            overlay.appendChild(badge);
+        });
+        
+        // Center watermark
         var text = document.createElement('div');
-        text.style.cssText = 'font-size:15vw;font-weight:bold;color:rgba(255,255,255,0.15);text-transform:uppercase;letter-spacing:20px;text-shadow:0 0 50px rgba(255,255,255,0.1);transform:rotate(-15deg);';
+        text.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-15deg);font-size:12vw;font-weight:bold;color:rgba(255,0,0,0.25);text-transform:uppercase;letter-spacing:20px;text-shadow:0 0 30px rgba(255,0,0,0.3);';
         text.innerHTML = 'TEST';
         
         overlay.appendChild(text);
