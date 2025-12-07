@@ -490,25 +490,22 @@
 
         var overlay = document.createElement('div');
         overlay.id = 'test-mode-overlay';
+        // STATIC MODE: No animation, completely static to prevent TV screensaver detection
+        // Keep-alive AJAX still runs in background to trick TV
         overlay.style.cssText =
             'position:fixed;' +
             'top:0;left:0;right:0;bottom:0;' +
             'z-index:9998;' +
             'pointer-events:none;' +
-            'border:4px solid transparent;' +
-            'background:linear-gradient(#000,#000) padding-box, linear-gradient(135deg, #f5af19 0%, #f12711 50%, #f5af19 100%) border-box;' +
-            'animation:testBorderPulse 3s ease-in-out infinite;';
+            'border:4px solid #f5af19;';  // Static border, no animation
 
-        // Add CSS animation for border pulse
+        // No CSS animations - completely static display
         var style = document.createElement('style');
         style.id = 'test-mode-styles';
-        style.innerHTML =
-            '@keyframes testBorderPulse { 0%,100%{opacity:0.7;} 50%{opacity:1;} }' +
-            '@keyframes testBadgePulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.02);} }' +
-            '@keyframes testDotBlink { 0%,100%{opacity:1;} 50%{opacity:0.4;} }';
+        style.innerHTML = '/* Static mode - no animations */';
         document.head.appendChild(style);
 
-        // Corner badge - Top right with friendly design
+        // Corner badge - Top right with friendly design (STATIC)
         var badge = document.createElement('div');
         badge.style.cssText =
             'position:absolute;' +
@@ -521,18 +518,17 @@
             'display:flex;' +
             'flex-direction:column;' +
             'align-items:center;' +
-            'gap:6px;' +
-            'animation:testBadgePulse 2s ease-in-out infinite;';
+            'gap:6px;';  // No animation
 
         badge.innerHTML =
             '<div style="display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;">' +
-            '<span style="display:inline-block;width:10px;height:10px;background:#4ade80;border-radius:50%;animation:testDotBlink 1.5s ease-in-out infinite;box-shadow:0 0 8px rgba(74,222,128,0.6);"></span>' +
+            '<span style="display:inline-block;width:10px;height:10px;background:#4ade80;border-radius:50%;box-shadow:0 0 8px rgba(74,222,128,0.6);"></span>' +  // Static dot, no blink
             'CHẾ ĐỘ KIỂM TRA' +
             '</div>' +
             '<div style="font-size:11px;opacity:0.9;font-weight:500;">Hệ thống đang chạy bình thường</div>';
         overlay.appendChild(badge);
 
-        // Bottom notice - Friendly reminder for staff
+        // Bottom notice - Friendly reminder for staff (STATIC)
         var notice = document.createElement('div');
         notice.style.cssText =
             'position:absolute;' +
@@ -553,12 +549,12 @@
             'box-shadow:0 4px 20px rgba(0,0,0,0.3);';
 
         notice.innerHTML =
-            '<span style="font-size:20px;">�</span>' +
+            '<span style="font-size:20px;">🔧</span>' +
             '<span>Đang kiểm tra hệ thống • <strong style="color:#4ade80;">Vui lòng không tắt TV</strong></span>' +
             '<span style="font-size:20px;">✨</span>';
         overlay.appendChild(notice);
 
-        // Center watermark - Very subtle, non-intrusive
+        // Center watermark - Very subtle, non-intrusive (STATIC)
         var watermark = document.createElement('div');
         watermark.style.cssText =
             'position:absolute;' +
@@ -575,7 +571,7 @@
         watermark.innerHTML = 'TEST';
         overlay.appendChild(watermark);
 
-        // Corner indicators - Small dots at corners for visibility
+        // Corner indicators - Static dots at corners (NO ANIMATION)
         var corners = ['top:12px;left:12px;', 'top:12px;right:12px;', 'bottom:12px;left:12px;', 'bottom:12px;right:12px;'];
         for (var i = 0; i < corners.length; i++) {
             var dot = document.createElement('div');
@@ -584,14 +580,12 @@
                 'width:8px;height:8px;' +
                 'background:linear-gradient(135deg, #ff9500, #ff5e3a);' +
                 'border-radius:50%;' +
-                'box-shadow:0 0 10px rgba(255,149,0,0.5);' +
-                'animation:testDotBlink 1.5s ease-in-out infinite;' +
-                'animation-delay:' + (i * 0.3) + 's;';
+                'box-shadow:0 0 10px rgba(255,149,0,0.5);';  // No animation
             overlay.appendChild(dot);
         }
 
         document.body.appendChild(overlay);
-        console.log('[TV Player] Test mode overlay shown');
+        console.log('[TV Player] Test mode overlay shown (STATIC MODE)');
     }
 
     function hideTestOverlay() {
