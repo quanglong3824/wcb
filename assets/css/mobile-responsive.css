@@ -1,0 +1,612 @@
+/**
+ * Mobile Responsive Styles
+ * Welcome Board System - Aurora Hotel
+ * 
+ * Breakpoints:
+ * - Mobile S: 320px
+ * - Mobile L: 425px
+ * - Tablet: 768px
+ * - Desktop: 1024px
+ */
+
+/* =====================================================
+   MOBILE NAVIGATION - Hamburger Menu
+   ===================================================== */
+
+/* Hamburger Button */
+.hamburger-menu {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 10px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    z-index: 1100;
+    position: relative;
+}
+
+.hamburger-menu span {
+    display: block;
+    width: 24px;
+    height: 3px;
+    background: var(--primary-gold, #d4af37);
+    margin: 2px 0;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+/* Hamburger animation when active */
+.hamburger-menu.active span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+}
+
+.hamburger-menu.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.hamburger-menu.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(5px, -5px);
+}
+
+/* Sidebar Overlay */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+/* =====================================================
+   RESPONSIVE - Tablet & Below (< 992px)
+   ===================================================== */
+@media (max-width: 991px) {
+    /* Show hamburger */
+    .hamburger-menu {
+        display: flex;
+    }
+    
+    /* Sidebar becomes off-canvas */
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        z-index: 1000;
+        width: 280px;
+    }
+    
+    .sidebar.active {
+        transform: translateX(0);
+        box-shadow: 5px 0 30px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Main content full width */
+    .main-content {
+        margin-left: 0 !important;
+        width: 100%;
+    }
+    
+    /* App container adjustment */
+    .app-container {
+        flex-direction: column;
+    }
+    
+    /* Cards grid adjustment */
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    /* TV grid adjustment */
+    .tv-grid {
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    }
+    
+    /* Stats grid */
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* =====================================================
+   RESPONSIVE - Mobile (< 768px)
+   ===================================================== */
+@media (max-width: 767px) {
+    /* Top info bar */
+    .top-info-bar {
+        padding: 6px 0;
+    }
+    
+    .info-bar-content {
+        padding: 0 10px;
+    }
+    
+    .info-bar-left {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .info-bar-left span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 0.85em;
+    }
+    
+    .info-bar-right .info-link span,
+    .info-bar-right .info-divider {
+        display: none;
+    }
+    
+    /* Page header */
+    .page-header {
+        padding: 20px 15px;
+        margin-bottom: 20px;
+    }
+    
+    .page-header h1 {
+        font-size: 1.5em;
+        flex-wrap: wrap;
+    }
+    
+    .page-header p {
+        font-size: 0.9em;
+    }
+    
+    /* Main content padding */
+    .main-content {
+        padding: 15px;
+    }
+    
+    /* Cards */
+    .card {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding-bottom: 15px;
+    }
+    
+    .card-header h2 {
+        font-size: 1.2em;
+    }
+    
+    /* Dashboard grid - single column */
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    /* Stat cards */
+    .stat-card {
+        padding: 20px;
+    }
+    
+    .stat-card-value {
+        font-size: 2em;
+    }
+    
+    .stat-card-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.4em;
+    }
+    
+    /* Stats grid */
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Buttons - touch friendly */
+    .btn {
+        min-height: 44px;
+        padding: 10px 16px;
+    }
+    
+    .btn-sm {
+        min-height: 38px;
+    }
+    
+    /* Tables */
+    .table-container {
+        margin: 0 -15px;
+        padding: 0 15px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    table {
+        min-width: 600px;
+    }
+    
+    table th,
+    table td {
+        padding: 12px 10px;
+        font-size: 0.9em;
+    }
+    
+    /* Hide less important columns on mobile */
+    .hide-mobile {
+        display: none !important;
+    }
+    
+    /* TV Grid */
+    .tv-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .tv-card {
+        margin-bottom: 0;
+    }
+    
+    .tv-preview-large {
+        height: 180px;
+    }
+    
+    .tv-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .special-modes {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+    
+    .btn-special {
+        flex: 1;
+        min-width: calc(50% - 5px);
+        justify-content: center;
+        font-size: 0.8rem;
+        padding: 10px;
+    }
+    
+    /* TV Controls */
+    .tv-controls {
+        flex-direction: column;
+    }
+    
+    .search-box {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    .filter-group {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+    
+    .filter-group select {
+        flex: 1;
+        min-width: 45%;
+    }
+    
+    /* Modals */
+    .modal-content,
+    .modal-overlay .modal {
+        width: 95% !important;
+        max-width: none !important;
+        margin: 10px;
+        max-height: 90vh;
+    }
+    
+    .modal-header {
+        padding: 15px 20px;
+    }
+    
+    .modal-body {
+        padding: 20px;
+    }
+    
+    .modal-footer {
+        padding: 15px 20px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .modal-footer .btn {
+        flex: 1;
+        min-width: calc(50% - 5px);
+    }
+    
+    /* Form row */
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    /* File gallery */
+    .file-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .gallery-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .gallery-filters {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 5px;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Dropzone */
+    .dropzone {
+        padding: 30px 20px;
+    }
+    
+    .dropzone-icon {
+        font-size: 3em;
+    }
+    
+    .dropzone-text h3 {
+        font-size: 1.1em;
+    }
+    
+    /* Pagination */
+    .pagination-container {
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    
+    .pagination-btn {
+        min-width: 40px;
+        height: 40px;
+    }
+    
+    .pagination-info {
+        width: 100%;
+        text-align: center;
+        margin: 10px 0;
+        order: -1;
+    }
+    
+    /* Filters bar */
+    .filters-bar {
+        flex-direction: column;
+        padding: 15px;
+        gap: 15px;
+    }
+    
+    .filters-bar .search-box {
+        max-width: none;
+    }
+    
+    .filters-bar .filter-group {
+        width: 100%;
+    }
+    
+    /* Action buttons in tables */
+    .action-buttons {
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    
+    .btn-action {
+        width: 36px;
+        height: 36px;
+    }
+    
+    /* User info cell */
+    .user-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
+
+/* =====================================================
+   RESPONSIVE - Small Mobile (< 480px)
+   ===================================================== */
+@media (max-width: 479px) {
+    /* Even smaller adjustments */
+    body {
+        zoom: 1 !important; /* Remove zoom on very small screens */
+    }
+    
+    .top-info-bar {
+        font-size: 0.7em;
+    }
+    
+    .info-bar-left span {
+        max-width: 150px;
+    }
+    
+    .page-header h1 {
+        font-size: 1.3em;
+    }
+    
+    /* Stat cards compact */
+    .stat-card {
+        padding: 15px;
+    }
+    
+    .stat-card-value {
+        font-size: 1.6em;
+    }
+    
+    .stat-card-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2em;
+    }
+    
+    /* Buttons stack full width */
+    .btn-special {
+        width: 100%;
+        min-width: 100%;
+    }
+    
+    /* Modal footer buttons */
+    .modal-footer .btn {
+        width: 100%;
+    }
+    
+    /* Table even smaller */
+    table th,
+    table td {
+        padding: 10px 8px;
+        font-size: 0.85em;
+    }
+    
+    /* Card actions */
+    .tv-card-actions {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .btn-tv-action {
+        font-size: 0.7rem;
+        padding: 8px 5px;
+    }
+    
+    /* Batch modal */
+    .batch-file-item {
+        flex-direction: column;
+    }
+    
+    .batch-file-preview {
+        width: 100%;
+        height: 120px;
+    }
+}
+
+/* =====================================================
+   TOUCH ENHANCEMENTS
+   ===================================================== */
+@media (pointer: coarse) {
+    /* Increase touch targets */
+    .nav-item {
+        padding: 16px 25px;
+        min-height: 48px;
+    }
+    
+    .btn, 
+    .btn-action,
+    .filter-btn,
+    .btn-file-action {
+        min-height: 44px;
+    }
+    
+    /* Increase spacing between clickable items */
+    .action-buttons {
+        gap: 8px;
+    }
+    
+    /* Larger checkboxes */
+    input[type="checkbox"],
+    input[type="radio"] {
+        width: 20px;
+        height: 20px;
+    }
+    
+    /* Form inputs */
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        min-height: 44px;
+        font-size: 16px; /* Prevent iOS zoom */
+    }
+    
+    select {
+        font-size: 16px; /* Prevent iOS zoom */
+    }
+}
+
+/* =====================================================
+   UTILITY CLASSES FOR RESPONSIVE
+   ===================================================== */
+
+/* Hide on desktop */
+@media (min-width: 992px) {
+    .hide-desktop {
+        display: none !important;
+    }
+}
+
+/* Hide on tablet */
+@media (min-width: 768px) and (max-width: 991px) {
+    .hide-tablet {
+        display: none !important;
+    }
+}
+
+/* Hide on mobile */
+@media (max-width: 767px) {
+    .hide-mobile {
+        display: none !important;
+    }
+}
+
+/* Show only on mobile */
+@media (min-width: 768px) {
+    .show-mobile-only {
+        display: none !important;
+    }
+}
+
+/* Text alignment responsive */
+@media (max-width: 767px) {
+    .text-center-mobile {
+        text-align: center !important;
+    }
+    
+    .text-left-mobile {
+        text-align: left !important;
+    }
+}
+
+/* Spacing utilities for mobile */
+@media (max-width: 767px) {
+    .mb-mobile-3 {
+        margin-bottom: 15px !important;
+    }
+    
+    .p-mobile-2 {
+        padding: 10px !important;
+    }
+}
+
+/* =====================================================
+   PRINT STYLES (Optional but good practice)
+   ===================================================== */
+@media print {
+    .sidebar,
+    .hamburger-menu,
+    .sidebar-overlay,
+    .top-info-bar,
+    .btn,
+    .action-buttons {
+        display: none !important;
+    }
+    
+    .main-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+    }
+    
+    .card {
+        break-inside: avoid;
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+    }
+}

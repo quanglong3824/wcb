@@ -88,8 +88,11 @@ $adminMenuItems = [
 ];
 ?>
 
+<!-- Mobile Sidebar Overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <!-- Sidebar Navigation -->
-<aside class="sidebar">
+<aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
         <div class="sidebar-logo">
             <i class="fas fa-tv"></i>
