@@ -128,7 +128,7 @@
 
     /* Set zoom for mobile */
     body {
-        zoom: 0.85 !important;
+        zoom: 0.7 !important;
     }
 
     /* Top info bar */
