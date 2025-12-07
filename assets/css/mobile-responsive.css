@@ -86,12 +86,47 @@
         transform: translateX(-100%);
         transition: transform 0.3s ease;
         z-index: 1000;
-        width: 280px;
+        width: 240px;
+        /* Smaller width on mobile */
     }
 
     .sidebar.active {
         transform: translateX(0);
         box-shadow: 5px 0 30px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Compact sidebar header */
+    .sidebar-header {
+        padding: 20px 15px;
+    }
+
+    .sidebar-logo i {
+        font-size: 1.8em;
+    }
+
+    .sidebar-logo h2 {
+        font-size: 1.1em;
+    }
+
+    .sidebar-logo p {
+        font-size: 0.75em;
+    }
+
+    /* Compact nav items */
+    .nav-section-title {
+        padding: 8px 15px;
+        font-size: 0.65em;
+    }
+
+    .nav-item {
+        padding: 10px 15px;
+        font-size: 0.9em;
+    }
+
+    .nav-item i {
+        width: 20px;
+        font-size: 0.95em;
+        margin-right: 10px;
     }
 
     /* Main content full width */
