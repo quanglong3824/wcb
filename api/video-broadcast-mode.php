@@ -1,8 +1,7 @@
 <?php
 /**
  * Video Broadcast Mode API
- * Gán 1 video cho tất cả TV (hoặc TV được chọn) và phát dạng slideshow
- * Tương tự chế độ Orchid nhưng dành cho video
+ * Gán 1 video/hình ảnh cho tất cả TV (hoặc trừ Restaurant)
  */
 require_once '../includes/auth-check.php';
 require_once '../config/php/config.php';
@@ -20,7 +19,6 @@ $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
 $mediaId = isset($data['media_id']) ? intval($data['media_id']) : 0;
-$tvIds = isset($data['tv_ids']) ? $data['tv_ids'] : []; // Nếu rỗng = tất cả TV
 $excludeRestaurant = isset($data['exclude_restaurant']) ? (bool)$data['exclude_restaurant'] : true;
 
 // Validate
@@ -37,8 +35,8 @@ if (!$conn) {
     exit;
 }
 
-// Kiểm tra media có tồn tại và là video không
-$mediaStmt = $conn->prepare("SELECT id, name, type, file_path, thumbnail_path FROM media WHERE id = ? AND status = 'active'");
+// Kiểm tra media có tồn tại không
+$mediaStmt = $conn->prepare("SELECT id, name, type FROM media WHERE id = ? AND status = 'active'");
 $mediaStmt->bind_param("i", $mediaId);
 $mediaStmt->execute();
 $mediaResult = $mediaStmt->get_result();
@@ -54,28 +52,27 @@ $media = $mediaResult->fetch_assoc();
 $conn->begin_transaction();
 
 try {
-    // Xác định danh sách TV
-    if (empty($tvIds)) {
-        // Lấy tất cả TV
-        $tvQuery = "SELECT id FROM tvs";
-        if ($excludeRestaurant) {
-            // Exclude Restaurant (thường là ID 5)
-            $tvQuery .= " WHERE folder != 'restaurant'";
-        }
-        $tvResult = $conn->query($tvQuery);
-        $tvIds = [];
-        while ($row = $tvResult->fetch_assoc()) {
-            $tvIds[] = $row['id'];
-        }
+    // Lấy danh sách TV IDs
+    $tvQuery = $excludeRestaurant 
+        ? "SELECT id, name FROM tvs WHERE folder != 'restaurant' ORDER BY id ASC"
+        : "SELECT id, name FROM tvs ORDER BY id ASC";
+    
+    $tvResult = $conn->query($tvQuery);
+    
+    if (!$tvResult || $tvResult->num_rows === 0) {
+        throw new Exception('Không tìm thấy TV nào');
     }
     
-    if (empty($tvIds)) {
-        throw new Exception('Không có TV nào để gán');
+    $broadcastTVIds = [];
+    $tvNames = [];
+    while ($row = $tvResult->fetch_assoc()) {
+        $broadcastTVIds[] = (int)$row['id'];
+        $tvNames[$row['id']] = $row['name'];
     }
     
-    $tvIdsStr = implode(',', array_map('intval', $tvIds));
+    $tvIdsStr = implode(',', $broadcastTVIds);
     
-    // 1. Bật tất cả TV được chọn (set online, tắt pause)
+    // 1. Bật tất cả TV (set online, tắt pause)
     $updateTVs = "UPDATE tvs SET status = 'online', is_paused = 0 WHERE id IN ($tvIdsStr)";
     $conn->query($updateTVs);
     
@@ -83,69 +80,33 @@ try {
     $deleteOld = "DELETE FROM tv_media_assignments WHERE tv_id IN ($tvIdsStr)";
     $conn->query($deleteOld);
     
-    // 3. Cập nhật default_content_id và current_content_id
-    foreach ($tvIds as $tvId) {
+    // 3. Cập nhật default_content_id và current_content_id trước (tránh trigger conflict)
+    foreach ($broadcastTVIds as $tvId) {
         $updateTV = $conn->prepare("UPDATE tvs SET default_content_id = ?, current_content_id = ? WHERE id = ?");
         $updateTV->bind_param("iii", $mediaId, $mediaId, $tvId);
         $updateTV->execute();
     }
     
-    // 4. Gán media mới cho tất cả TV
+    // 4. Gán media mới cho tất cả TV (sau khi update tvs)
     $assignedTVs = [];
-    foreach ($tvIds as $tvId) {
-        $tvId = intval($tvId);
+    foreach ($broadcastTVIds as $tvId) {
+        // Thêm assignment (không set is_default để tránh trigger)
+        $insertStmt = $conn->prepare("INSERT INTO tv_media_assignments (tv_id, media_id, is_default, assigned_by, assigned_at) VALUES (?, ?, 0, ?, NOW())");
+        $insertStmt->bind_param("iii", $tvId, $mediaId, $_SESSION['user_id']);
+        $insertStmt->execute();
         
-        // Lấy tên TV
-        $tvStmt = $conn->prepare("SELECT name FROM tvs WHERE id = ?");
-        $tvStmt->bind_param("i", $tvId);
-        $tvStmt->execute();
-        $tvResult = $tvStmt->get_result();
-        $tv = $tvResult->fetch_assoc();
-        
-        if ($tv) {
-            // Thêm assignment
-            $insertStmt = $conn->prepare("INSERT INTO tv_media_assignments (tv_id, media_id, is_default, assigned_by, assigned_at) VALUES (?, ?, 0, ?, NOW())");
-            $insertStmt->bind_param("iii", $tvId, $mediaId, $_SESSION['user_id']);
-            $insertStmt->execute();
-            
-            $assignedTVs[] = $tv['name'];
-        }
+        $assignedTVs[] = $tvNames[$tvId];
     }
     
-    // 5. Cập nhật is_default sau khi insert
+    // 5. Cập nhật is_default sau khi insert (tránh trigger conflict)
     $updateDefault = "UPDATE tv_media_assignments SET is_default = 1 WHERE tv_id IN ($tvIdsStr) AND media_id = ?";
     $stmt = $conn->prepare($updateDefault);
     $stmt->bind_param("i", $mediaId);
     $stmt->execute();
     
-    // 6. Gửi tín hiệu reload cho tất cả TV
-    $timestamp = time();
-    foreach ($tvIds as $tvId) {
-        $settingKey = 'tv_reload_signal_' . $tvId;
-        
-        $checkStmt = $conn->prepare("SELECT id FROM system_settings WHERE setting_key = ?");
-        $checkStmt->bind_param("s", $settingKey);
-        $checkStmt->execute();
-        $checkResult = $checkStmt->get_result();
-        
-        if ($checkResult->num_rows > 0) {
-            $updateStmt = $conn->prepare("UPDATE system_settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?");
-            $timestampStr = (string)$timestamp;
-            $updateStmt->bind_param("ss", $timestampStr, $settingKey);
-            $updateStmt->execute();
-        } else {
-            $insertStmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value, setting_type, description) VALUES (?, ?, 'string', ?)");
-            $timestampStr = (string)$timestamp;
-            $description = "Reload signal for TV ID " . $tvId;
-            $insertStmt->bind_param("sss", $settingKey, $timestampStr, $description);
-            $insertStmt->execute();
-        }
-    }
-    
-    // 7. Ghi log
+    // 6. Ghi log
     $logStmt = $conn->prepare("INSERT INTO activity_logs (user_id, action, entity_type, entity_id, description, ip_address) VALUES (?, 'video_broadcast', 'media', ?, ?, ?)");
-    $mediaType = $media['type'] === 'video' ? 'Video' : 'Media';
-    $logDesc = "Áp dụng chế độ Video Broadcast - Gán '{$media['name']}' ($mediaType) cho " . implode(', ', $assignedTVs);
+    $logDesc = "Video Broadcast - Gán '{$media['name']}' cho " . implode(', ', $assignedTVs);
     $ip = $_SERVER['REMOTE_ADDR'];
     $logStmt->bind_param("iiss", $_SESSION['user_id'], $mediaId, $logDesc, $ip);
     $logStmt->execute();
@@ -157,12 +118,7 @@ try {
         'success' => true,
         'message' => "Đã phát '{$media['name']}' trên " . count($assignedTVs) . " TV!",
         'tvs_affected' => count($assignedTVs),
-        'tvs' => $assignedTVs,
-        'media' => [
-            'id' => $media['id'],
-            'name' => $media['name'],
-            'type' => $media['type']
-        ]
+        'tvs' => $assignedTVs
     ]);
     
 } catch (Exception $e) {

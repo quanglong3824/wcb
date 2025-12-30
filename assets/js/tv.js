@@ -1503,8 +1503,10 @@ function confirmVideoBroadcast() {
         return;
     }
     
-    // Show loading
-    const btn = event.target;
+    // Show loading on button
+    const btn = document.querySelector('.btn-broadcast');
+    if (!btn) return;
+    
     const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang phát...';
     btn.disabled = true;
@@ -1520,23 +1522,29 @@ function confirmVideoBroadcast() {
             exclude_restaurant: !includeRestaurant
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        
         if (data.success) {
             showMessage(data.message || 'Đã phát nội dung trên tất cả TV!', 'success');
             closeVideoBroadcastModal();
             loadTVs();
         } else {
-            showMessage('Lỗi: ' + data.message, 'error');
+            showMessage('Lỗi: ' + (data.message || 'Không xác định'), 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        showMessage('Có lỗi xảy ra!', 'error');
-    })
-    .finally(() => {
         btn.innerHTML = originalText;
         btn.disabled = false;
+        showMessage('Có lỗi xảy ra: ' + error.message, 'error');
     });
 }
 
