@@ -16,6 +16,7 @@ include 'includes/sidebar.php';
     <link rel="stylesheet" href="assets/css/tv.css">
     <link rel="stylesheet" href="assets/css/orchid-mode.css">
     <link rel="stylesheet" href="assets/css/assign-modal.css">
+    <link rel="stylesheet" href="assets/css/video-broadcast.css">
     
     <div class="tv-container">
         <!-- Header -->
@@ -36,6 +37,9 @@ include 'includes/sidebar.php';
                 </button>
                 <button class="btn-special btn-orchid" onclick="openOrchidMode()" title="Gán 1 WCB cho 6 TV (trừ Restaurant)">
                     <i class="fas fa-layer-group"></i> Chế độ Orchid
+                </button>
+                <button class="btn-special btn-video-broadcast" onclick="openVideoBroadcastMode()" title="Phát 1 video/hình ảnh trên tất cả TV">
+                    <i class="fas fa-broadcast-tower"></i> Video Broadcast
                 </button>
                 <button class="btn-special btn-reload-all" onclick="forceReloadAllTVs()" title="Ép tải lại tất cả 7 TV (dùng cho TV cũ Samsung/Sony)">
                     <i class="fas fa-sync-alt"></i> Reload All TVs

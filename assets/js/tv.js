@@ -93,10 +93,21 @@ function createTVCard(tv) {
                     <img src="${escapeHtml(firstMedia.file_path)}" alt="${escapeHtml(firstMedia.name)}" 
                          onerror="this.src='assets/img/no-image.png'">
                 ` : `
-                    <div class="video-preview-large">
-                        <i class="fas fa-play-circle"></i>
-                        <span>Video</span>
-                    </div>
+                    ${firstMedia.thumbnail_path ? `
+                        <img src="${escapeHtml(firstMedia.thumbnail_path)}" alt="${escapeHtml(firstMedia.name)}" 
+                             class="video-thumbnail"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="video-preview-large" style="display:none;">
+                            <i class="fas fa-play-circle"></i>
+                            <span>Video</span>
+                        </div>
+                    ` : `
+                        <div class="video-preview-large">
+                            <i class="fas fa-play-circle"></i>
+                            <span>Video</span>
+                        </div>
+                    `}
+                    <div class="video-badge"><i class="fas fa-video"></i> Video</div>
                 `}
                 <div class="preview-overlay">
                     <div class="preview-info">
@@ -1300,3 +1311,239 @@ function unassignMediaFromTV(mediaId, tvId, mediaName) {
         showMessage('Có lỗi xảy ra khi hủy gán!', 'error');
     });
 }
+
+
+// ============================================
+// VIDEO BROADCAST MODE
+// ============================================
+
+// Open Video Broadcast Mode - Phát 1 video/hình ảnh trên tất cả TV
+function openVideoBroadcastMode() {
+    // Load all WCBs (both video and image)
+    fetch('api/get-wcb.php')
+        .then(r => r.json())
+        .then(data => {
+            const wcbs = data.wcbs || [];
+            
+            if (wcbs.length === 0) {
+                alert('Chưa có nội dung nào trong hệ thống!');
+                return;
+            }
+            
+            // Filter active media
+            const activeMedia = wcbs.filter(w => w.status === 'active');
+            
+            const modalHTML = `
+                <div id="videoBroadcastModal" class="video-broadcast-modal">
+                    <div class="video-broadcast-content">
+                        <div class="video-broadcast-header">
+                            <h2><i class="fas fa-broadcast-tower"></i> Video Broadcast Mode</h2>
+                            <button class="modal-close" onclick="closeVideoBroadcastModal()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="video-broadcast-body">
+                            <div class="vb-info-box">
+                                <i class="fas fa-info-circle info-icon"></i>
+                                <div>
+                                    <strong>Chế độ Video Broadcast</strong>
+                                    <p>Phát 1 video hoặc hình ảnh trên tất cả TV cùng lúc.</p>
+                                    <p>Tất cả TV sẽ được bật và hiển thị nội dung đã chọn.</p>
+                                    <p style="color: #3b82f6; margin-top: 5px;">
+                                        <i class="fas fa-lightbulb"></i> 
+                                        Phù hợp cho sự kiện, thông báo quan trọng, hoặc chào đón khách VIP
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="vb-tv-selection">
+                                <h4><i class="fas fa-tv"></i> Chọn TV để phát:</h4>
+                                <div class="vb-tv-options">
+                                    <label class="vb-tv-option selected">
+                                        <input type="checkbox" id="vb-all-tvs" checked onchange="toggleAllTVsSelection(this)">
+                                        <span><i class="fas fa-check-double"></i> Tất cả TV (trừ Restaurant)</span>
+                                    </label>
+                                    <label class="vb-tv-option">
+                                        <input type="checkbox" id="vb-include-restaurant" onchange="toggleRestaurantSelection(this)">
+                                        <span><i class="fas fa-utensils"></i> Bao gồm Restaurant</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="wcb-selection-orchid" style="margin-top: 25px;">
+                                <h4><i class="fas fa-photo-video"></i> Chọn nội dung để phát:</h4>
+                                <div class="video-selection-grid">
+                                    ${activeMedia.length > 0 ? activeMedia.map(media => `
+                                        <label class="video-radio">
+                                            <input type="radio" name="broadcast-media" value="${media.id}" class="video-radio-input">
+                                            <div class="video-select-item">
+                                                <div class="video-select-preview">
+                                                    ${getMediaPreviewHTML(media)}
+                                                    <div class="video-play-overlay">
+                                                        <i class="fas fa-${media.type === 'video' ? 'play' : 'expand'}"></i>
+                                                    </div>
+                                                    <span class="video-type-badge ${media.type === 'image' ? 'is-image' : ''}">
+                                                        <i class="fas fa-${media.type === 'video' ? 'video' : 'image'}"></i>
+                                                        ${media.type === 'video' ? 'Video' : 'Hình ảnh'}
+                                                    </span>
+                                                </div>
+                                                <div class="video-select-info">
+                                                    <strong title="${escapeHtml(media.name)}">${escapeHtml(media.name)}</strong>
+                                                    <div class="video-meta">
+                                                        <span><i class="fas fa-hdd"></i> ${media.file_size_formatted || 'N/A'}</span>
+                                                        ${media.assigned_tv_count > 0 ? `
+                                                            <span><i class="fas fa-tv"></i> ${media.assigned_tv_count} TV</span>
+                                                        ` : ''}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    `).join('') : `
+                                        <div class="no-videos-message" style="grid-column: 1/-1;">
+                                            <i class="fas fa-photo-video"></i>
+                                            <p>Chưa có nội dung nào</p>
+                                            <small>Vui lòng upload video hoặc hình ảnh trước</small>
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="video-broadcast-footer">
+                            <button class="btn-cancel" onclick="closeVideoBroadcastModal()">
+                                <i class="fas fa-times"></i> Hủy
+                            </button>
+                            <button class="btn-broadcast" onclick="confirmVideoBroadcast()">
+                                <i class="fas fa-broadcast-tower"></i> Phát trên tất cả TV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            document.body.style.overflow = 'hidden';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi khi tải dữ liệu!');
+        });
+}
+
+// Get media preview HTML with thumbnail support
+function getMediaPreviewHTML(media) {
+    if (media.type === 'image') {
+        return `<img src="${escapeHtml(media.file_path)}" alt="${escapeHtml(media.name)}" 
+                     onerror="this.src='assets/img/no-image.png'">`;
+    } else if (media.type === 'video') {
+        // Check if thumbnail exists
+        if (media.thumbnail_path) {
+            return `<img src="${escapeHtml(media.thumbnail_path)}" alt="${escapeHtml(media.name)}" 
+                         onerror="this.parentElement.innerHTML='<div class=\\'video-thumb-placeholder\\'><i class=\\'fas fa-play-circle\\'></i><span>Video</span></div>'">`;
+        } else {
+            return `<div class="video-thumb-placeholder">
+                        <i class="fas fa-play-circle"></i>
+                        <span>Video</span>
+                    </div>`;
+        }
+    }
+    return `<div class="video-thumb-placeholder">
+                <i class="fas fa-file"></i>
+                <span>Media</span>
+            </div>`;
+}
+
+// Close Video Broadcast Modal
+function closeVideoBroadcastModal() {
+    const modal = document.getElementById('videoBroadcastModal');
+    if (modal) {
+        modal.remove();
+    }
+    document.body.style.overflow = '';
+}
+
+// Toggle all TVs selection
+function toggleAllTVsSelection(checkbox) {
+    const label = checkbox.closest('.vb-tv-option');
+    if (checkbox.checked) {
+        label.classList.add('selected');
+    } else {
+        label.classList.remove('selected');
+    }
+}
+
+// Toggle restaurant selection
+function toggleRestaurantSelection(checkbox) {
+    const label = checkbox.closest('.vb-tv-option');
+    if (checkbox.checked) {
+        label.classList.add('selected');
+    } else {
+        label.classList.remove('selected');
+    }
+}
+
+// Confirm Video Broadcast
+function confirmVideoBroadcast() {
+    const selectedMedia = document.querySelector('input[name="broadcast-media"]:checked');
+    
+    if (!selectedMedia) {
+        alert('Vui lòng chọn 1 video hoặc hình ảnh!');
+        return;
+    }
+    
+    const mediaId = parseInt(selectedMedia.value);
+    const includeRestaurant = document.getElementById('vb-include-restaurant')?.checked || false;
+    
+    const confirmMsg = includeRestaurant 
+        ? 'Bạn có chắc muốn phát nội dung này trên TẤT CẢ TV (bao gồm Restaurant)?'
+        : 'Bạn có chắc muốn phát nội dung này trên tất cả TV (trừ Restaurant)?';
+    
+    if (!confirm(confirmMsg + '\n\nTất cả TV sẽ được bật và hiển thị nội dung đã chọn.')) {
+        return;
+    }
+    
+    // Show loading
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang phát...';
+    btn.disabled = true;
+    
+    // Call Video Broadcast API
+    fetch('api/video-broadcast-mode.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            media_id: mediaId,
+            exclude_restaurant: !includeRestaurant
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message || 'Đã phát nội dung trên tất cả TV!', 'success');
+            closeVideoBroadcastModal();
+            loadTVs();
+        } else {
+            showMessage('Lỗi: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Có lỗi xảy ra!', 'error');
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(event) {
+    const videoBroadcastModal = document.getElementById('videoBroadcastModal');
+    if (event.target === videoBroadcastModal) {
+        closeVideoBroadcastModal();
+    }
+});
