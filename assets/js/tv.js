@@ -1533,8 +1533,20 @@ function confirmVideoBroadcast() {
         btn.disabled = false;
         
         if (data.success) {
-            showMessage(data.message || 'Đã phát nội dung trên tất cả TV!', 'success');
             closeVideoBroadcastModal();
+            
+            // Gọi reload all TVs để TV cập nhật ngay
+            fetch('api/reload-all-tvs.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            }).then(() => {
+                console.log('Reload signal sent to all TVs');
+                showMessage(data.message + ' TV sẽ tự động cập nhật trong vài giây.', 'success');
+            }).catch(err => {
+                console.log('Reload signal error:', err);
+                showMessage(data.message, 'success');
+            });
+            
             loadTVs();
         } else {
             showMessage('Lỗi: ' + (data.message || 'Không xác định'), 'error');

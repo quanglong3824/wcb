@@ -104,7 +104,27 @@ try {
     $stmt->bind_param("i", $mediaId);
     $stmt->execute();
     
-    // 6. Ghi log
+    // 6. Gửi tín hiệu reload cho tất cả TV
+    $timestamp = time();
+    foreach ($broadcastTVIds as $tvId) {
+        $settingKey = 'tv_reload_signal_' . $tvId;
+        $timestampStr = (string)$timestamp;
+        
+        // Kiểm tra setting đã tồn tại chưa
+        $checkResult = $conn->query("SELECT id FROM system_settings WHERE setting_key = '$settingKey' LIMIT 1");
+        
+        if ($checkResult && $checkResult->num_rows > 0) {
+            $conn->query("UPDATE system_settings SET setting_value = '$timestampStr', updated_at = NOW() WHERE setting_key = '$settingKey'");
+        } else {
+            $desc = "Reload signal for TV ID $tvId";
+            $conn->query("INSERT INTO system_settings (setting_key, setting_value, setting_type, description) VALUES ('$settingKey', '$timestampStr', 'string', '$desc')");
+        }
+        
+        // Thêm vào bảng tv_reload_signals
+        $conn->query("INSERT INTO tv_reload_signals (tv_id, created_at, processed) VALUES ($tvId, NOW(), 0)");
+    }
+    
+    // 7. Ghi log
     $logStmt = $conn->prepare("INSERT INTO activity_logs (user_id, action, entity_type, entity_id, description, ip_address) VALUES (?, 'video_broadcast', 'media', ?, ?, ?)");
     $logDesc = "Video Broadcast - Gán '{$media['name']}' cho " . implode(', ', $assignedTVs);
     $ip = $_SERVER['REMOTE_ADDR'];
