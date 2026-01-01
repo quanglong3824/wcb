@@ -51,6 +51,7 @@
         testModeActive: false,
         isTransitioning: false,
         initTime: 0,
+        initialized: false,
 
         // Keep-alive state
         keepAliveTimer: null,
@@ -67,35 +68,41 @@
         state.tvId = window.TV_ID || 1;
         state.tvFolder = window.TV_FOLDER || 'basement';
         state.initTime = Date.now();
+        
+        // Đánh dấu đã khởi tạo xong để tránh reload loop
+        state.initialized = false;
 
         console.log('[TV Player] Initializing for TV:', state.tvFolder, 'ID:', state.tvId);
 
-        // Load initial reload timestamp from server
-        loadInitialReloadTimestamp();
+        // Load initial reload timestamp from server FIRST, then start other services
+        loadInitialReloadTimestamp(function() {
+            // Đánh dấu đã khởi tạo xong
+            state.initialized = true;
+            
+            // Load content
+            loadContent();
 
-        // Load content
-        loadContent();
+            // Start heartbeat
+            startHeartbeat();
 
-        // Start heartbeat
-        startHeartbeat();
+            // Start reload checker
+            startReloadChecker();
 
-        // Start reload checker
-        startReloadChecker();
+            // Start reload signal checker (backup for old TVs)
+            startReloadSignalChecker();
 
-        // Start reload signal checker (backup for old TVs)
-        startReloadSignalChecker();
+            // Start fullscreen signal checker
+            startFullscreenChecker();
 
-        // Start fullscreen signal checker
-        startFullscreenChecker();
+            // Start test mode checker
+            startTestModeChecker();
 
-        // Start test mode checker
-        startTestModeChecker();
+            // Start keep-alive system (prevent Samsung TV screensaver)
+            startKeepAliveSystem();
 
-        // Start keep-alive system (prevent Samsung TV screensaver)
-        startKeepAliveSystem();
-
-        // Setup content refresh
-        state.contentRefreshTimer = setInterval(loadContent, CONFIG.CONTENT_REFRESH);
+            // Setup content refresh
+            state.contentRefreshTimer = setInterval(loadContent, CONFIG.CONTENT_REFRESH);
+        });
 
         // Add meta refresh as fallback
         addMetaRefresh(CONFIG.META_REFRESH_SECONDS);
@@ -112,7 +119,7 @@
     }
 
     // Load initial reload timestamp from server
-    function loadInitialReloadTimestamp() {
+    function loadInitialReloadTimestamp(callback) {
         var xhr = new XMLHttpRequest();
         var basePath = getBasePath();
         var url = basePath + 'api/check-reload-signal.php?tv_id=' + state.tvId;
@@ -121,16 +128,34 @@
         xhr.timeout = 5000;
 
         xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                try {
-                    var data = JSON.parse(xhr.responseText);
-                    if (data.success && data.timestamp) {
-                        state.lastReloadTimestamp = parseInt(data.timestamp, 10) || 0;
-                        console.log('[TV Player] Initial reload timestamp:', state.lastReloadTimestamp);
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    try {
+                        var data = JSON.parse(xhr.responseText);
+                        if (data.success && data.timestamp) {
+                            state.lastReloadTimestamp = parseInt(data.timestamp, 10) || 0;
+                            console.log('[TV Player] Initial reload timestamp:', state.lastReloadTimestamp);
+                        }
+                    } catch (e) {
+                        console.error('[TV Player] Error parsing initial timestamp:', e);
                     }
-                } catch (e) {
-                    console.error('[TV Player] Error parsing initial timestamp:', e);
                 }
+                // Gọi callback dù thành công hay thất bại
+                if (typeof callback === 'function') {
+                    callback();
+                }
+            }
+        };
+        
+        xhr.onerror = function() {
+            if (typeof callback === 'function') {
+                callback();
+            }
+        };
+        
+        xhr.ontimeout = function() {
+            if (typeof callback === 'function') {
+                callback();
             }
         };
 
@@ -281,20 +306,114 @@
                 'style="width:100%;height:100%;object-fit:cover;" ' +
                 'onerror="this.src=\'' + basePath + 'assets/img/no-image.png\'">';
         } else if (content.type === 'video') {
-            html = '<video src="' + filePath + '" autoplay loop muted playsinline ' +
-                'style="width:100%;height:100%;object-fit:cover;"></video>';
+            // Enhanced video tag for old TizenOS/Samsung TV compatibility
+            html = '<video ' +
+                'style="width:100%;height:100%;object-fit:cover;background:#000;" ' +
+                'autoplay loop muted playsinline ' +
+                'preload="auto" ' +
+                'webkit-playsinline ' +
+                'x-webkit-airplay="allow" ' +
+                'crossorigin="anonymous">' +
+                '<source src="' + filePath + '" type="video/mp4; codecs=avc1.42E01E,mp4a.40.2">' +
+                '<source src="' + filePath + '" type="video/mp4">' +
+                'Your browser does not support the video tag.' +
+                '</video>';
         }
 
         // Remove mode-contain class to show full screen
         display.classList.remove('mode-contain');
         display.innerHTML = html;
 
-        // For video, ensure it plays
+        // For video, ensure it plays with enhanced error handling
         var video = display.querySelector('video');
         if (video) {
-            video.play().catch(function (e) {
-                console.log('[TV Player] Video autoplay blocked:', e);
+            // Add loading state
+            console.log('[TV Player] Loading video:', filePath);
+            
+            // Event listeners for debugging
+            video.addEventListener('loadstart', function() {
+                console.log('[TV Player] Video loadstart');
             });
+            
+            video.addEventListener('loadedmetadata', function() {
+                console.log('[TV Player] Video metadata loaded, duration:', video.duration);
+            });
+            
+            video.addEventListener('loadeddata', function() {
+                console.log('[TV Player] Video data loaded');
+            });
+            
+            video.addEventListener('canplay', function() {
+                console.log('[TV Player] Video can play');
+            });
+            
+            video.addEventListener('canplaythrough', function() {
+                console.log('[TV Player] Video can play through');
+            });
+            
+            video.addEventListener('playing', function() {
+                console.log('[TV Player] Video is playing');
+            });
+            
+            video.addEventListener('error', function(e) {
+                var errorMsg = 'Unknown error';
+                if (video.error) {
+                    switch (video.error.code) {
+                        case 1: errorMsg = 'MEDIA_ERR_ABORTED'; break;
+                        case 2: errorMsg = 'MEDIA_ERR_NETWORK'; break;
+                        case 3: errorMsg = 'MEDIA_ERR_DECODE'; break;
+                        case 4: errorMsg = 'MEDIA_ERR_SRC_NOT_SUPPORTED'; break;
+                    }
+                }
+                console.error('[TV Player] Video error:', errorMsg, video.error);
+                
+                // Show error message after 3 seconds
+                setTimeout(function() {
+                    showNoContent('Không thể phát video: ' + errorMsg);
+                }, 3000);
+            });
+            
+            video.addEventListener('stalled', function() {
+                console.warn('[TV Player] Video stalled');
+            });
+            
+            video.addEventListener('waiting', function() {
+                console.log('[TV Player] Video waiting for data');
+            });
+            
+            // Force load and play
+            video.load();
+            
+            // Try to play with multiple attempts for old browsers
+            var playAttempts = 0;
+            var maxAttempts = 3;
+            
+            function attemptPlay() {
+                playAttempts++;
+                console.log('[TV Player] Play attempt', playAttempts);
+                
+                var playPromise = video.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(function() {
+                        console.log('[TV Player] Video playing successfully');
+                    }).catch(function(e) {
+                        console.log('[TV Player] Play attempt ' + playAttempts + ' failed:', e);
+                        
+                        if (playAttempts < maxAttempts) {
+                            setTimeout(attemptPlay, 1000);
+                        } else {
+                            console.error('[TV Player] All play attempts failed');
+                        }
+                    });
+                } else {
+                    // Old browsers that don't return a promise
+                    console.log('[TV Player] Video play initiated (no promise support)');
+                }
+            }
+            
+            // Start first play attempt after a short delay
+            setTimeout(attemptPlay, 500);
         }
     }
 
@@ -325,6 +444,11 @@
     }
 
     function sendHeartbeat() {
+        // Không gửi heartbeat nếu chưa khởi tạo xong
+        if (!state.initialized) {
+            return;
+        }
+        
         var xhr = new XMLHttpRequest();
         var basePath = getBasePath();
         var url = basePath + 'api/heartbeat.php?tv_id=' + state.tvId + '&folder=' + encodeURIComponent(state.tvFolder);
@@ -337,7 +461,7 @@
                 try {
                     var data = JSON.parse(xhr.responseText);
                     if (data.reload) {
-                        console.log('[TV Player] Reload signal received');
+                        console.log('[TV Player] Reload signal received from heartbeat');
                         reloadPage();
                     }
                 } catch (e) { }
@@ -382,6 +506,11 @@
     }
 
     function checkReloadTimestamp() {
+        // Không check nếu chưa khởi tạo xong
+        if (!state.initialized) {
+            return;
+        }
+        
         var xhr = new XMLHttpRequest();
         var basePath = getBasePath();
         var url = basePath + 'api/check-reload-signal.php?tv_id=' + state.tvId + '&t=' + Date.now();
@@ -396,9 +525,13 @@
                     if (data.success && data.timestamp) {
                         var serverTimestamp = parseInt(data.timestamp, 10) || 0;
 
+                        // Chỉ reload nếu timestamp mới LỚN HƠN timestamp đã lưu
+                        // và timestamp mới được tạo SAU khi trang này load
                         if (serverTimestamp > state.lastReloadTimestamp &&
                             serverTimestamp * 1000 > state.initTime) {
-                            console.log('[TV Player] New reload signal detected!');
+                            console.log('[TV Player] New reload signal detected! Server:', serverTimestamp, 'Local:', state.lastReloadTimestamp);
+                            // Cập nhật timestamp để tránh reload lại
+                            state.lastReloadTimestamp = serverTimestamp;
                             reloadPage();
                         }
                     }

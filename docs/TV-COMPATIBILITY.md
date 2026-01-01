@@ -100,6 +100,42 @@ http://[server]/wcb/fo/tv2/
    ```
 3. **Kiểm tra file media** có tồn tại không
 
+### Video MP4 không phát (màn hình chờ)
+
+Đây là vấn đề phổ biến với TizenOS cũ:
+
+1. **Kiểm tra codec video:**
+   - Mở browser console trên TV (nếu có)
+   - Tìm lỗi: `MEDIA_ERR_DECODE` hoặc `MEDIA_ERR_SRC_NOT_SUPPORTED`
+   - Nếu thấy lỗi codec, video cần convert lại
+
+2. **Convert video về định dạng tương thích:**
+   ```bash
+   # Baseline Profile - tương thích cao nhất
+   ffmpeg -i input.mp4 -c:v libx264 -profile:v baseline -level 3.0 \
+          -preset slow -crf 23 -c:a aac -b:a 128k -ar 48000 \
+          -movflags +faststart output.mp4
+   
+   # Nếu vẫn lỗi, thử giảm resolution
+   ffmpeg -i input.mp4 -c:v libx264 -profile:v baseline -level 3.0 \
+          -vf scale=1280:720 -preset slow -crf 23 -c:a aac -b:a 128k \
+          -ar 48000 -movflags +faststart output_720p.mp4
+   ```
+
+3. **Kiểm tra network:**
+   - Video có tải được không? (xem console log)
+   - Trực tiếp truy cập URL video trong browser TV
+   - Kiểm tra MIME type server trả về đúng: `video/mp4`
+
+4. **Kiểm tra file path:**
+   - Đảm bảo đường dẫn video chính xác
+   - Kiểm tra quyền truy cập file trên server
+
+5. **Xem log chi tiết:**
+   - Mở Developer Console trên TV
+   - Tìm các log `[TV Player] Video...`
+   - Chú ý các sự kiện: `loadstart`, `loadedmetadata`, `error`
+
 ### TV không gửi heartbeat
 
 1. **Kiểm tra JavaScript** có chạy không
@@ -112,8 +148,20 @@ http://[server]/wcb/fo/tv2/
 
 1. **Sử dụng hình ảnh JPEG** thay vì PNG (nhẹ hơn)
 2. **Tối ưu kích thước file** < 2MB mỗi hình
-3. **Tránh video nặng** - sử dụng MP4 H.264
+3. **Video MP4 với codec H.264 (Baseline Profile)**
+   - Codec: H.264 (AVC) - Baseline hoặc Main Profile, Level 3.0 trở xuống
+   - Audio: AAC-LC, 48kHz, Stereo
+   - Container: MP4
+   - Bitrate: ≤ 4 Mbps (khuyến nghị 2-3 Mbps)
+   - Resolution: 1920x1080 hoặc thấp hơn
+   - FPS: 24-30 fps
 4. **Giảm số lượng slide** - tối đa 3 slides
+
+### Convert video cho TV cũ (FFmpeg)
+
+```bash
+ffmpeg -i input.mp4 -c:v libx264 -profile:v baseline -level 3.0 -preset slow -crf 23 -c:a aac -b:a 128k -ar 48000 -movflags +faststart output.mp4
+```
 
 ### Cấu hình TV
 
