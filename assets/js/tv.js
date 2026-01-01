@@ -5,6 +5,15 @@
 // Global variable to store all TVs
 let allTVs = [];
 
+// Format time from seconds to MM:SS format
+function formatTime(seconds) {
+    if (!seconds || isNaN(seconds)) return '0:00';
+    
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
 // Load TVs on page load
 document.addEventListener('DOMContentLoaded', function() {
     loadTVs();
@@ -165,6 +174,12 @@ function createTVCard(tv) {
             
             ${previewHTML}
             
+            ${tv.current_content_type === 'video' && tv.video_duration ? `
+                <div class="video-progress-bar">
+                    <div class="progress-bar-fill" style="width: ${Math.min(100, (tv.video_current_time / tv.video_duration) * 100).toFixed(1)}%"></div>
+                </div>
+            ` : ''}
+            
             <div class="tv-card-footer">
                 <div class="tv-wcb-info">
                     ${tv.assigned_media && tv.assigned_media.length > 0 ? `
@@ -172,6 +187,15 @@ function createTVCard(tv) {
                     ` : `
                         <span class="wcb-empty"><i class="fas fa-inbox"></i> Chưa gán</span>
                     `}
+                    
+                    ${tv.current_content_type === 'video' && tv.video_duration ? `
+                        <span class="video-progress-time">
+                            <i class="fas fa-clock"></i>
+                            <span class="time-current">${formatTime(tv.video_current_time || 0)}</span>
+                            /
+                            <span class="time-total">${formatTime(tv.video_duration)}</span>
+                        </span>
+                    ` : ''}
                 </div>
                 <div class="tv-quick-actions">
                     <button class="btn-icon" onclick="viewTV(${tv.id})" title="Xem TV">

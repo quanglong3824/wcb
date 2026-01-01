@@ -62,7 +62,12 @@
         keepAliveCount: 0,
         
         // Video watchdog timer
-        videoWatchdogTimer: null
+        videoWatchdogTimer: null,
+        
+        // Video progress reporter
+        videoProgressTimer: null,
+        currentVideoElement: null,
+        currentContentId: null
     };
 
     // Initialize
@@ -294,6 +299,9 @@
         }
 
         console.log('[TV Player] Displaying:', content.name, '- Type:', content.type);
+        
+        // Store current content ID
+        state.currentContentId = content.id;
 
         var html = '';
         var basePath = getBasePath();
@@ -501,6 +509,12 @@
             
             // Start first play attempt after a short delay
             setTimeout(attemptPlay, 500);
+            
+            // Store video element reference
+            state.currentVideoElement = video;
+            
+            // Start video progress reporter (send progress every 5 seconds)
+            startVideoProgressReporter();
         }
     }
 
@@ -510,6 +524,16 @@
         if (!display) return;
 
         var basePath = getBasePath();
+        
+        // Clear video element reference
+        state.currentVideoElement = null;
+        state.currentContentId = null;
+        
+        // Stop video progress reporter
+        if (state.videoProgressTimer) {
+            clearInterval(state.videoProgressTimer);
+            state.videoProgressTimer = null;
+        }
 
         // Hiển thị logo thay vì thông báo lỗi
         display.innerHTML =
@@ -1112,6 +1136,57 @@
             }
         }
     };
+    
+    // Video Progress Reporter
+    // Sends current video time to server every 5 seconds for dashboard display
+    function startVideoProgressReporter() {
+        // Clear any existing timer
+        if (state.videoProgressTimer) {
+            clearInterval(state.videoProgressTimer);
+        }
+        
+        // Send progress immediately
+        sendVideoProgress();
+        
+        // Then send every 5 seconds
+        state.videoProgressTimer = setInterval(sendVideoProgress, 5000);
+    }
+    
+    function sendVideoProgress() {
+        // Check if we have a video playing
+        if (!state.currentVideoElement || !state.currentContentId) {
+            return;
+        }
+        
+        var video = state.currentVideoElement;
+        
+        // Make sure video has valid data
+        if (!video.duration || video.duration === 0 || isNaN(video.duration)) {
+            return;
+        }
+        
+        var currentTime = video.currentTime || 0;
+        var duration = video.duration || 0;
+        
+        // Send to server
+        var xhr = new XMLHttpRequest();
+        var basePath = getBasePath();
+        var url = basePath + 'api/update-video-progress.php?tv_id=' + state.tvId + 
+                  '&content_id=' + state.currentContentId +
+                  '&current_time=' + currentTime.toFixed(2) +
+                  '&duration=' + duration.toFixed(2);
+        
+        xhr.open('GET', url, true);
+        xhr.timeout = 3000;
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                // Progress sent successfully (silent)
+            }
+        };
+        
+        xhr.send();
+    }
 
     // Start when DOM ready
     if (document.readyState === 'loading') {

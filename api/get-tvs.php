@@ -8,7 +8,7 @@ header('Content-Type: application/json');
 $conn = getDBConnection();
 
 if ($conn) {
-    // Lấy thông tin TV kèm nội dung chi tiết
+    // Lấy thông tin TV kèm nội dung chi tiết và video progress
     $query = "SELECT 
                 t.id,
                 t.name,
@@ -29,6 +29,9 @@ if ($conn) {
                 dm.name as default_content_name,
                 dm.type as default_content_type,
                 dm.file_path as default_content_path,
+                vp.current_time as video_current_time,
+                vp.duration as video_duration,
+                vp.updated_at as video_progress_updated,
                 TIMESTAMPDIFF(SECOND, t.last_heartbeat, NOW()) as seconds_since_heartbeat,
                 CASE 
                     WHEN t.last_heartbeat IS NULL THEN 'offline'
@@ -38,6 +41,7 @@ if ($conn) {
               FROM tvs t
               LEFT JOIN media m ON t.current_content_id = m.id AND m.status = 'active'
               LEFT JOIN media dm ON t.default_content_id = dm.id AND dm.status = 'active'
+              LEFT JOIN tv_video_progress vp ON t.id = vp.tv_id
               ORDER BY t.id ASC";
     
     $result = $conn->query($query);
