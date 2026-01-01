@@ -59,7 +59,10 @@
         domMoveTimer: null,
         keepAliveElement: null,
         pixelFlickerElement: null,
-        keepAliveCount: 0
+        keepAliveCount: 0,
+        
+        // Video watchdog timer
+        videoWatchdogTimer: null
     };
 
     // Initialize
@@ -390,6 +393,23 @@
                 });
             });
             
+            // CRITICAL: Monitor time and restart BEFORE video ends (2-3 seconds early)
+            // This prevents the freeze issue on old TizenOS TVs
+            video.addEventListener('timeupdate', function() {
+                if (!state.isTransitioning && video.duration > 0) {
+                    var timeRemaining = video.duration - video.currentTime;
+                    
+                    // Restart video when 2 seconds remaining (or at 95% completion)
+                    if (timeRemaining <= 2 || video.currentTime / video.duration >= 0.95) {
+                        console.log('[TV Player] Near end detected (', timeRemaining.toFixed(2), 's remaining), restarting early...');
+                        video.currentTime = 0;
+                        video.play().catch(function(e) {
+                            console.error('[TV Player] Early restart failed:', e);
+                        });
+                    }
+                }
+            });
+            
             // Handle video pause - auto resume (prevent freeze)
             video.addEventListener('pause', function() {
                 console.log('[TV Player] Video paused, resuming...');
@@ -414,6 +434,35 @@
                     }
                 }, 500);
             });
+            
+            // Additional safety: Check video status every 2 seconds
+            // Clear any existing watchdog first
+            if (state.videoWatchdogTimer) {
+                clearInterval(state.videoWatchdogTimer);
+            }
+            
+            state.videoWatchdogTimer = setInterval(function() {
+                if (!video || state.isTransitioning) {
+                    return;
+                }
+                
+                // If video is paused but should be playing, restart it
+                if (video.paused && video.currentTime >= 0) {
+                    console.warn('[TV Player] Video stuck in pause, forcing play...');
+                    video.play().catch(function(e) {
+                        console.error('[TV Player] Force play failed:', e);
+                    });
+                }
+                
+                // If video is at the end, restart immediately
+                if (video.duration > 0 && video.currentTime >= video.duration - 0.1) {
+                    console.log('[TV Player] Video at end in check, restarting...');
+                    video.currentTime = 0;
+                    video.play().catch(function(e) {
+                        console.error('[TV Player] Check restart failed:', e);
+                    });
+                }
+            }, 2000);
             
             // Force load and play
             video.load();
