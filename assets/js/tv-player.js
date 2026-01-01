@@ -381,8 +381,46 @@
                 console.log('[TV Player] Video waiting for data');
             });
             
+            // Handle video end - force restart to prevent freeze
+            video.addEventListener('ended', function() {
+                console.log('[TV Player] Video ended, restarting...');
+                video.currentTime = 0;
+                video.play().catch(function(e) {
+                    console.error('[TV Player] Failed to restart video:', e);
+                });
+            });
+            
+            // Handle video pause - auto resume (prevent freeze)
+            video.addEventListener('pause', function() {
+                console.log('[TV Player] Video paused, resuming...');
+                // Don't resume if video is being changed
+                if (!state.isTransitioning) {
+                    setTimeout(function() {
+                        video.play().catch(function(e) {
+                            console.log('[TV Player] Resume failed:', e);
+                        });
+                    }, 100);
+                }
+            });
+            
+            // Handle video suspend - try to resume
+            video.addEventListener('suspend', function() {
+                console.warn('[TV Player] Video suspended, attempting to resume...');
+                setTimeout(function() {
+                    if (video.paused && !state.isTransitioning) {
+                        video.play().catch(function(e) {
+                            console.log('[TV Player] Resume after suspend failed:', e);
+                        });
+                    }
+                }, 500);
+            });
+            
             // Force load and play
             video.load();
+            
+            // Ensure loop attribute is set (backup for old browsers)
+            video.loop = true;
+            video.setAttribute('loop', 'loop');
             
             // Try to play with multiple attempts for old browsers
             var playAttempts = 0;

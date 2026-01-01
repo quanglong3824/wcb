@@ -56,6 +56,7 @@ TV gửi heartbeat mỗi 30 giây để:
 | 5 | restaurant | TV Restaurant | Nhà hàng |
 | 6 | fo/tv1 | TV FO 1 | Lễ tân 1 |
 | 7 | fo/tv2 | TV FO 2 | Lễ tân 2 |
+| 8 | greeting | TV Greeting | Phòng chào đoàn |
 
 ### URL truy cập
 
@@ -67,6 +68,7 @@ http://[server]/wcb/lotus/
 http://[server]/wcb/restaurant/
 http://[server]/wcb/fo/tv1/
 http://[server]/wcb/fo/tv2/
+http://[server]/wcb/greeting/
 ```
 
 ## Cơ chế cập nhật nội dung
