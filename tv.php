@@ -23,7 +23,7 @@ include 'includes/sidebar.php';
         <div class="tv-header">
             <div>
                 <h1><i class="fas fa-tv"></i> Quản lý TV</h1>
-                <p>Quản lý 7 màn hình TV tại các vị trí trong khách sạn</p>
+                <p>Quản lý 8 màn hình TV tại các vị trí trong khách sạn</p>
             </div>
             <div class="special-modes">
                 <button class="btn-special btn-refresh-data" onclick="refreshDataAjax()" title="Tải lại dữ liệu (không reload trang)">

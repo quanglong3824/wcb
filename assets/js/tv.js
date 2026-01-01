@@ -39,7 +39,7 @@ function displayTVs(tvs) {
             <div class="empty-state" style="grid-column: 1/-1;">
                 <i class="fas fa-tv"></i>
                 <p>Chưa có TV nào trong hệ thống</p>
-                <p style="font-size: 0.9em;">Vui lòng import database để thêm 7 TV mặc định</p>
+                <p style="font-size: 0.9em;">Vui lòng import database để thêm 8 TV mặc định</p>
             </div>
         `;
         return;
@@ -1027,7 +1027,11 @@ function assignWCBToTV(tvId) {
     
     // Kiểm tra TV có online không
     if (tv.status !== 'online') {
-        if (!confirm(`TV "${tv.name}" đang OFFLINE!\n\nBạn có chắc muốn gán WCB cho TV offline?\n\nLưu ý: TV sẽ không hiển thị nội dung cho đến khi được bật lại.`)) {
+        if (!confirm(`TV "${tv.name}" đang OFFLINE!
+
+Bạn có chắc muốn gán WCB cho TV offline?
+
+Lưu ý: TV sẽ không hiển thị nội dung cho đến khi được bật lại.`)) {
             return;
         }
     }
