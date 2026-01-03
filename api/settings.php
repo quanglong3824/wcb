@@ -104,13 +104,13 @@ function updateSettings($conn) {
             $checkStmt->execute();
             
             if ($checkStmt->get_result()->num_rows > 0) {
-                // Update existing
-                $updateStmt = $conn->prepare("UPDATE system_settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?");
+                // Update existing - only update setting_value
+                $updateStmt = $conn->prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = ?");
                 $updateStmt->bind_param("ss", $value, $key);
                 $updateStmt->execute();
             } else {
-                // Insert new
-                $insertStmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value, created_at, updated_at) VALUES (?, ?, NOW(), NOW())");
+                // Insert new - only required columns
+                $insertStmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?)");
                 $insertStmt->bind_param("ss", $key, $value);
                 $insertStmt->execute();
             }
