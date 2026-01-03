@@ -14,13 +14,14 @@
 (function () {
     'use strict';
 
-    // Configuration - Optimized for old Smart TVs
+    // Configuration - Optimized for old Smart TVs with AGGRESSIVE real-time updates
     var CONFIG = {
         SLIDE_INTERVAL: 8000,        // 8 seconds per slide
-        CONTENT_REFRESH: 30000,      // Check for new content every 30 seconds
-        HEARTBEAT_INTERVAL: 15000,   // Send heartbeat every 15 seconds
-        RELOAD_CHECK_INTERVAL: 5000, // Check for reload signal every 5 seconds
-        RELOAD_SIGNAL_CHECK: 3000,   // Check system_settings reload signal every 3 seconds
+        CONTENT_REFRESH: 10000,      // Check for new content every 10 seconds (faster)
+        CONTENT_REFRESH_AGGRESSIVE: 2000, // AGGRESSIVE refresh when no content (2 seconds)
+        HEARTBEAT_INTERVAL: 5000,    // Send heartbeat every 5 seconds (VERY FAST)
+        RELOAD_CHECK_INTERVAL: 2000, // Check for reload signal every 2 seconds (FAST)
+        RELOAD_SIGNAL_CHECK: 1000,   // Check system_settings reload signal every 1 second (INSTANT)
         FADE_DURATION: 800,          // Fade transition duration
         MAX_CONTENTS: 10,            // Maximum contents to display
         META_REFRESH_SECONDS: 300,   // Meta refresh every 5 minutes (backup)
@@ -67,7 +68,17 @@
         // Video progress reporter
         videoProgressTimer: null,
         currentVideoElement: null,
-        currentContentId: null
+        currentContentId: null,
+        
+        // Track if currently showing "no content" state
+        isShowingNoContent: false,
+        
+        // Auto reload settings
+        autoReloadEnabled: false,
+        autoReloadMode: 'fixed', // 'fixed' or 'smart'
+        autoReloadInterval: 120, // seconds (default 2 minutes)
+        autoReloadThreshold: 10, // seconds (smart mode)
+        autoReloadTimer: null
     };
 
     // Initialize
@@ -86,6 +97,9 @@
         loadInitialReloadTimestamp(function() {
             // Đánh dấu đã khởi tạo xong
             state.initialized = true;
+            
+            // Load auto reload settings
+            loadAutoReloadSettings();
             
             // Load content
             loadContent();
@@ -227,11 +241,21 @@
             // Check if content changed
             var newHash = JSON.stringify(contents.map(function (c) { return c.id; }));
 
-            if (newHash !== state.lastContentHash) {
-                console.log('[TV Player] Content updated, reloading slideshow');
+            // CRITICAL FIX: Start slideshow if content changed OR if we were showing "no content"
+            // This ensures TV auto-plays when content is assigned after being in standby mode
+            if (newHash !== state.lastContentHash || state.isShowingNoContent) {
+                console.log('[TV Player] Content updated or recovered from no-content state, reloading slideshow');
                 state.lastContentHash = newHash;
                 state.contentList = contents;
                 state.currentIndex = 0;
+                state.isShowingNoContent = false; // Clear no-content flag
+
+                // Switch back to normal content refresh interval
+                if (state.contentRefreshTimer) {
+                    clearInterval(state.contentRefreshTimer);
+                }
+                state.contentRefreshTimer = setInterval(loadContent, CONFIG.CONTENT_REFRESH);
+                console.log('[TV Player] Switched to normal refresh interval:', CONFIG.CONTENT_REFRESH, 'ms');
 
                 // Restart slideshow
                 stopSlideshow();
@@ -239,6 +263,16 @@
             }
         } else {
             console.log('[TV Player] No content available:', data.message);
+            
+            // Switch to aggressive refresh when no content (check every 5 seconds)
+            if (!state.isShowingNoContent) {
+                if (state.contentRefreshTimer) {
+                    clearInterval(state.contentRefreshTimer);
+                }
+                state.contentRefreshTimer = setInterval(loadContent, CONFIG.CONTENT_REFRESH_AGGRESSIVE);
+                console.log('[TV Player] Switched to aggressive refresh interval:', CONFIG.CONTENT_REFRESH_AGGRESSIVE, 'ms');
+            }
+            
             showNoContent(data.message || 'Chưa có nội dung hiển thị');
         }
     }
@@ -525,6 +559,9 @@
 
         var basePath = getBasePath();
         
+        // Mark that we're showing no content state
+        state.isShowingNoContent = true;
+        
         // Clear video element reference
         state.currentVideoElement = null;
         state.currentContentId = null;
@@ -571,11 +608,22 @@
             if (xhr.readyState === 4 && xhr.status === 200) {
                 try {
                     var data = JSON.parse(xhr.responseText);
+                    
+                    // Check for reload signal
                     if (data.reload) {
                         console.log('[TV Player] Reload signal received from heartbeat');
                         reloadPage();
+                        return;
                     }
-                } catch (e) { }
+                    
+                    // NEW: Check for content change signal (INSTANT UPDATE)
+                    if (data.content_changed) {
+                        console.log('[TV Player] Content changed signal received! Loading new content immediately...');
+                        loadContent(); // Load content immediately
+                    }
+                } catch (e) {
+                    console.error('[TV Player] Heartbeat parse error:', e);
+                }
             }
         };
 
@@ -599,9 +647,18 @@
             if (xhr.readyState === 4 && xhr.status === 200) {
                 try {
                     var data = JSON.parse(xhr.responseText);
+                    
+                    // Check for reload signal
                     if (data.reload) {
                         console.log('[TV Player] Reload signal from checker');
                         reloadPage();
+                        return;
+                    }
+                    
+                    // NEW: Also check content_changed in reload checker
+                    if (data.content_changed) {
+                        console.log('[TV Player] Content changed detected in checker! Loading...');
+                        loadContent();
                     }
                 } catch (e) { }
             }
@@ -1186,6 +1243,171 @@
         };
         
         xhr.send();
+    }
+
+    // ============================================
+    // AUTO RELOAD SYSTEM - Root page reload based on settings
+    // ============================================
+
+    /**
+     * Load auto reload settings from server
+     */
+    function loadAutoReloadSettings() {
+        var xhr = new XMLHttpRequest();
+        var basePath = getBasePath();
+        var url = basePath + 'api/settings.php?group=auto_reload';
+
+        xhr.open('GET', url, true);
+        xhr.timeout = 5000;
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                try {
+                    var data = JSON.parse(xhr.responseText);
+                    if (data.success && data.grouped && data.grouped.auto_reload) {
+                        var settings = data.grouped.auto_reload;
+                        
+                        state.autoReloadEnabled = settings.auto_reload_enabled === '1' || settings.auto_reload_enabled === 'true';
+                        state.autoReloadMode = settings.auto_reload_mode || 'fixed';
+                        state.autoReloadInterval = parseInt(settings.auto_reload_interval || 120, 10);
+                        state.autoReloadThreshold = parseInt(settings.auto_reload_threshold || 10, 10);
+                        
+                        console.log('[TV Player] Auto reload settings loaded:', {
+                            enabled: state.autoReloadEnabled,
+                            mode: state.autoReloadMode,
+                            interval: state.autoReloadInterval,
+                            threshold: state.autoReloadThreshold
+                        });
+                        
+                        // Start auto reload if enabled
+                        if (state.autoReloadEnabled) {
+                            startAutoReload();
+                        }
+                    }
+                } catch (e) {
+                    console.error('[TV Player] Error loading auto reload settings:', e);
+                }
+            }
+        };
+
+        xhr.send();
+    }
+
+    /**
+     * Start auto reload system based on mode
+     */
+    function startAutoReload() {
+        // Clear any existing timer
+        if (state.autoReloadTimer) {
+            clearTimeout(state.autoReloadTimer);
+            state.autoReloadTimer = null;
+        }
+
+        if (!state.autoReloadEnabled) {
+            console.log('[TV Player] Auto reload disabled');
+            return;
+        }
+
+        if (state.autoReloadMode === 'fixed') {
+            startFixedAutoReload();
+        } else if (state.autoReloadMode === 'smart') {
+            startSmartAutoReload();
+        }
+    }
+
+    /**
+     * Fixed mode: Reload every X seconds
+     */
+    function startFixedAutoReload() {
+        var delayMs = state.autoReloadInterval * 1000;
+        console.log('[TV Player] Starting FIXED auto reload - every', state.autoReloadInterval, 'seconds');
+
+        state.autoReloadTimer = setTimeout(function() {
+            console.log('[TV Player] Fixed auto reload triggered');
+            reloadRootPage();
+        }, delayMs);
+    }
+
+    /**
+     * Smart mode: Reload when video has X seconds remaining
+     */
+    function startSmartAutoReload() {
+        console.log('[TV Player] Starting SMART auto reload - trigger when video has', state.autoReloadThreshold, 'seconds remaining');
+        
+        // Check video progress every 2 seconds
+        var checkInterval = setInterval(function() {
+            if (!state.currentVideoElement || !state.autoReloadEnabled || state.autoReloadMode !== 'smart') {
+                clearInterval(checkInterval);
+                return;
+            }
+
+            var video = state.currentVideoElement;
+            if (video && video.duration > 0 && !isNaN(video.duration)) {
+                var timeRemaining = video.duration - video.currentTime;
+                
+                // Trigger reload when video has threshold seconds remaining
+                if (timeRemaining > 0 && timeRemaining <= state.autoReloadThreshold) {
+                    console.log('[TV Player] Smart auto reload triggered - video has', timeRemaining.toFixed(2), 'seconds remaining');
+                    clearInterval(checkInterval);
+                    reloadRootPage();
+                }
+            }
+        }, 2000);
+
+        // Store interval for cleanup
+        state.autoReloadTimer = checkInterval;
+    }
+
+    /**
+     * Reload root page (e.g., /wcb/)
+     */
+    function reloadRootPage() {
+        console.log('[TV Player] Reloading root page for synchronization...');
+
+        // Clear all timers
+        stopSlideshow();
+        stopKeepAliveSystem();
+        if (state.contentRefreshTimer) clearInterval(state.contentRefreshTimer);
+        if (state.heartbeatTimer) clearInterval(state.heartbeatTimer);
+        if (state.reloadCheckTimer) clearInterval(state.reloadCheckTimer);
+        if (state.reloadSignalTimer) clearInterval(state.reloadSignalTimer);
+        if (state.autoReloadTimer) {
+            clearTimeout(state.autoReloadTimer);
+            clearInterval(state.autoReloadTimer);
+            state.autoReloadTimer = null;
+        }
+
+        // Show reload indicator
+        try {
+            var indicator = document.createElement('div');
+            indicator.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;' +
+                'background:rgba(0,0,0,0.95);z-index:9999;display:flex;' +
+                'align-items:center;justify-content:center;flex-direction:column;color:white;';
+            indicator.innerHTML = '<div style="font-size:3em;margin-bottom:20px;">⟳</div>' +
+                '<div style="font-size:1.5em;">Đang đồng bộ hệ thống...</div>' +
+                '<div style="font-size:1em;margin-top:10px;opacity:0.7;">Auto Reload Active</div>';
+            document.body.appendChild(indicator);
+        } catch (e) {}
+
+        // Navigate to root /wcb/
+        setTimeout(function() {
+            var currentPath = window.location.pathname;
+            // Remove last two segments to get root
+            // e.g., /wcb/basement/index.php -> /wcb/
+            var rootPath = currentPath.replace(/\/[^\/]+\/[^\/]+$/, '/');
+
+            // Safety: if regex fails, construct root path
+            if (!rootPath || rootPath === currentPath) {
+                var idx = currentPath.indexOf('/wcb/');
+                if (idx !== -1) {
+                    rootPath = currentPath.substring(0, idx + 5); // '/wcb/' length = 5
+                } else {
+                    rootPath = '/wcb/';
+                }
+            }
+
+            window.location.href = rootPath + '?auto_reload=' + Date.now();
+        }, 1000);
     }
 
     // Start when DOM ready

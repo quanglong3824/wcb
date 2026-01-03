@@ -108,14 +108,42 @@ function saveDisplaySettings(event) {
     
     const formData = new FormData(event.target);
     
-    fetch('api/save-display-settings.php', {
+    // Convert to JSON for easier handling
+    const settings = {
+        auto_refresh: formData.get('autoRefresh') === 'on' ? '1' : '0',
+        refresh_interval: formData.get('refreshInterval'),
+        default_transition: formData.get('defaultTransition'),
+        transition_duration: formData.get('transitionDuration'),
+        // Auto reload settings
+        auto_reload_enabled: formData.get('autoReloadEnabled') === 'on' ? '1' : '0',
+        auto_reload_mode: formData.get('autoReloadMode'),
+        auto_reload_interval: formData.get('autoReloadInterval'),
+        auto_reload_threshold: formData.get('autoReloadThreshold')
+    };
+    
+    fetch('api/settings.php', {
         method: 'POST',
-        body: formData
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(settings)
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showAlert('success', 'Lưu cài đặt hiển thị thành công!');
+            showAlert('success', 'Lưu cài đặt hiển thị thành công! Các TV sẽ áp dụng cài đặt mới sau khi reload.');
+            
+            // Trigger reload all TVs to apply new settings
+            setTimeout(() => {
+                if (confirm('Bạn có muốn reload tất cả TV để áp dụng cài đặt mới ngay không?')) {
+                    fetch('api/reload-all-tvs.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    }).then(() => {
+                        showAlert('success', 'Đã gửi lệnh reload đến tất cả TV');
+                    });
+                }
+            }, 1000);
         } else {
             showAlert('error', 'Lỗi: ' + data.message);
         }

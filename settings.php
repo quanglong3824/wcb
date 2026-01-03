@@ -121,6 +121,41 @@ include 'includes/sidebar.php';
                     </div>
                     
                     <div class="settings-group">
+                        <h3>Auto Reload Root (Đồng bộ TV)</h3>
+                        
+                        <div class="toggle-label">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="autoReloadEnabled" name="autoReloadEnabled">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span>Bật tự động reload toàn bộ trang</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Chế độ Auto Reload</label>
+                            <select id="autoReloadMode" name="autoReloadMode">
+                                <option value="fixed">Fixed - Reload mỗi X phút</option>
+                                <option value="smart">Smart Sync - Reload khi video gần hết</option>
+                            </select>
+                            <small>Fixed: Reload theo khoảng thời gian cố định. Smart: Reload khi phát hiện video còn 5-15 giây</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Thời gian reload (phút) - Fixed Mode</label>
+                            <input type="number" id="autoReloadInterval" name="autoReloadInterval" 
+                                   value="2" min="1" max="30">
+                            <small>Reload toàn bộ trang mỗi X phút (chỉ áp dụng cho Fixed Mode)</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Ngưỡng video còn lại (giây) - Smart Mode</label>
+                            <input type="number" id="autoReloadThreshold" name="autoReloadThreshold" 
+                                   value="10" min="5" max="30">
+                            <small>Reload khi video còn X giây (chỉ áp dụng cho Smart Sync Mode)</small>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-group">
                         <h3>Hiệu ứng chuyển cảnh</h3>
                         
                         <div class="form-group">

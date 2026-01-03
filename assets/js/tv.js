@@ -5,6 +5,13 @@
 // Global variable to store all TVs
 let allTVs = [];
 
+// Live preview state
+const livePreviewState = {
+    enabled: true,
+    updateInterval: 3000, // Update every 3 seconds
+    timers: {}
+};
+
 // Format time from seconds to MM:SS format
 function formatTime(seconds) {
     if (!seconds || isNaN(seconds)) return '0:00';
@@ -55,6 +62,11 @@ function displayTVs(tvs) {
     }
     
     grid.innerHTML = tvs.map(tv => createTVCard(tv)).join('');
+    
+    // Initialize live video previews after rendering
+    setTimeout(() => {
+        initLiveVideoPreviews();
+    }, 500);
 }
 
 // Create TV card HTML
@@ -149,7 +161,7 @@ function createTVCard(tv) {
     }
     
     return `
-        <div class="tv-card">
+        <div class="tv-card" data-tv-id="${tv.id}">
             <div class="tv-card-header">
                 <div class="tv-header-left">
                     <img src="assets/img/logo-dark-ui.png" alt="Logo" class="tv-logo" onerror="this.style.display='none'">
@@ -1595,3 +1607,189 @@ document.addEventListener('click', function(event) {
         closeVideoBroadcastModal();
     }
 });
+
+// ============================================
+// LIVE VIDEO PREVIEW SYSTEM
+// Real-time video preview in TV cards
+// ============================================
+
+/**
+ * Initialize live video previews after TVs are loaded
+ */
+function initLiveVideoPreviews() {
+    if (!livePreviewState.enabled) return;
+    
+    console.log('[Live Preview] Initializing live video previews...');
+    
+    allTVs.forEach(tv => {
+        if (tv.current_content_type === 'video' && tv.current_content_file_path) {
+            // Find the preview container for this TV
+            const tvCard = document.querySelector(`.tv-card[data-tv-id="${tv.id}"]`);
+            if (!tvCard) return;
+            
+            const previewContainer = tvCard.querySelector('.tv-preview-large');
+            if (!previewContainer) return;
+            
+            // Convert static preview to live video
+            convertToLiveVideoPreview(tv, previewContainer);
+        }
+    });
+    
+    // Start real-time sync loop
+    startLivePreviewSync();
+}
+
+/**
+ * Convert static preview to live video element
+ */
+function convertToLiveVideoPreview(tv, container) {
+    // Replace content with video element
+    const videoHTML = `
+        <video 
+            id="live-preview-${tv.id}"
+            class="live-preview-video"
+            src="${escapeHtml(tv.current_content_file_path)}"
+            muted
+            preload="metadata"
+            style="width:100%;height:100%;object-fit:cover;background:#000;border-radius:8px;"
+        ></video>
+        <div class="live-badge" style="position:absolute;top:10px;right:10px;background:rgba(255,0,0,0.8);color:white;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:4px;">
+            <span class="live-dot" style="width:6px;height:6px;background:#fff;border-radius:50%;animation:pulse 1.5s ease-in-out infinite;"></span>
+            LIVE
+        </div>
+        <div class="preview-overlay" style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent, rgba(0,0,0,0.7));padding:15px;">
+            <div class="preview-info" style="display:flex;align-items:center;gap:8px;color:white;">
+                <i class="fas fa-play-circle"></i>
+                <span style="font-size:13px;">${escapeHtml(tv.current_content_name || 'Video')}</span>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = videoHTML;
+    container.style.position = 'relative';
+    
+    // Seek video to current position after metadata loads
+    const video = container.querySelector('video');
+    if (video) {
+        video.addEventListener('loadedmetadata', function() {
+            const currentTime = tv.video_current_time || 0;
+            if (currentTime > 0 && currentTime < video.duration) {
+                video.currentTime = currentTime;
+            }
+            console.log(`[Live Preview] Video ${tv.id} synced to ${currentTime.toFixed(2)}s`);
+        });
+        
+        // Play video silently (muted)
+        video.addEventListener('canplay', function() {
+            video.play().catch(e => {
+                console.log(`[Live Preview] Auto-play blocked for TV ${tv.id}`);
+            });
+        });
+    }
+}
+
+/**
+ * Start real-time sync loop - update video positions
+ */
+function startLivePreviewSync() {
+    // Clear existing timer
+    if (livePreviewState.timers.sync) {
+        clearInterval(livePreviewState.timers.sync);
+    }
+    
+    // Update video positions every 3 seconds
+    livePreviewState.timers.sync = setInterval(() => {
+        syncAllVideoPreviews();
+    }, livePreviewState.updateInterval);
+    
+    console.log('[Live Preview] Sync loop started (every 3s)');
+}
+
+/**
+ * Sync all video previews with server data
+ */
+function syncAllVideoPreviews() {
+    allTVs.forEach(tv => {
+        if (tv.current_content_type === 'video') {
+            const video = document.getElementById(`live-preview-${tv.id}`);
+            if (video && video.duration > 0) {
+                // Get latest progress from server via API
+                fetch(`api/get-tv-status.php?tv_id=${tv.id}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success && data.video_current_time !== undefined) {
+                            const serverTime = parseFloat(data.video_current_time);
+                            const videoTime = video.currentTime;
+                            
+                            // Only sync if difference > 2 seconds (avoid jitter)
+                            if (Math.abs(serverTime - videoTime) > 2) {
+                                video.currentTime = serverTime;
+                                console.log(`[Live Preview] TV ${tv.id} resynced: ${serverTime.toFixed(2)}s`);
+                            }
+                            
+                            // Update progress bar
+                            updateProgressBar(tv.id, serverTime, data.video_duration || video.duration);
+                        }
+                    })
+                    .catch(e => {
+                        // Silent fail - don't spam console
+                    });
+            }
+        }
+    });
+}
+
+/**
+ * Update progress bar in TV card
+ */
+function updateProgressBar(tvId, currentTime, duration) {
+    const tvCard = document.querySelector(`.tv-card[data-tv-id="${tvId}"]`);
+    if (!tvCard) return;
+    
+    // Update progress bar width
+    const progressFill = tvCard.querySelector('.progress-bar-fill');
+    if (progressFill && duration > 0) {
+        const percentage = Math.min(100, (currentTime / duration) * 100);
+        progressFill.style.width = `${percentage.toFixed(1)}%`;
+    }
+    
+    // Update time display
+    const timeCurrent = tvCard.querySelector('.time-current');
+    const timeTotal = tvCard.querySelector('.time-total');
+    if (timeCurrent) {
+        timeCurrent.textContent = formatTime(currentTime);
+    }
+    if (timeTotal) {
+        timeTotal.textContent = formatTime(duration);
+    }
+}
+
+/**
+ * Stop live preview sync (cleanup)
+ */
+function stopLivePreviewSync() {
+    if (livePreviewState.timers.sync) {
+        clearInterval(livePreviewState.timers.sync);
+        livePreviewState.timers.sync = null;
+        console.log('[Live Preview] Sync loop stopped');
+    }
+}
+
+// Add pulse animation CSS
+if (!document.getElementById('live-preview-styles')) {
+    const style = document.createElement('style');
+    style.id = 'live-preview-styles';
+    style.textContent = `
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+        .live-preview-video {
+            transition: opacity 0.3s ease;
+        }
+        .live-preview-video:hover {
+            opacity: 0.9;
+        }
+    `;
+    document.head.appendChild(style);
+}

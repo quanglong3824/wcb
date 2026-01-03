@@ -81,11 +81,26 @@ if ($stmt->execute()) {
         $updateSignal->execute();
     }
     
+    // Check for content changes (NEW - instant content update detection)
+    $contentChanged = false;
+    $contentCheckStmt = $conn->prepare(
+        "SELECT COUNT(*) as count FROM tv_media_assignments 
+         WHERE tv_id = ? AND assigned_at > DATE_SUB(NOW(), INTERVAL 10 SECOND)"
+    );
+    $contentCheckStmt->bind_param("i", $tvId);
+    $contentCheckStmt->execute();
+    $contentCheckResult = $contentCheckStmt->get_result()->fetch_assoc();
+    
+    if ($contentCheckResult['count'] > 0) {
+        $contentChanged = true;
+    }
+    
     echo json_encode([
         'success' => true,
         'message' => 'Heartbeat received',
         'tv' => $tv,
         'reload' => $reloadSignal,
+        'content_changed' => $contentChanged,
         'server_time' => date('Y-m-d H:i:s')
     ]);
 } else {
