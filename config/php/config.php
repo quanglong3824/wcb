@@ -31,7 +31,7 @@ ini_set('display_errors', 1);
 
 // Application Settings
 define('APP_NAME', 'Welcome Board System');
-define('APP_VERSION', '1.0.0');
+define('APP_VERSION', '1.1.3');
 define('HOTEL_NAME', 'Aurora Hotel Plaza');
 
 // Upload Settings
