@@ -499,6 +499,22 @@
                 
                 state.videoHasEnded = true;
                 console.log('[TV Player] Video ended naturally at', video.currentTime, '/', video.duration);
+                console.log('[TV Player] Auto Reload:', state.autoReloadEnabled, 'Mode:', state.autoReloadMode);
+                
+                // CRITICAL: If Auto Reload Smart mode is enabled, DON'T use countdown loop
+                // Let Auto Reload handle the restart instead
+                if (state.autoReloadEnabled && state.autoReloadMode === 'smart') {
+                    console.log('[TV Player] Smart Auto Reload is active, skipping countdown loop - letting Auto Reload handle restart');
+                    // Show a simple "Waiting for next cycle" message instead
+                    var waitingDiv = document.createElement('div');
+                    waitingDiv.id = 'loop-countdown';
+                    waitingDiv.style.cssText = 'position:fixed;bottom:20px;right:20px;background:rgba(0,0,0,0.7);color:#fff;padding:8px 15px;border-radius:20px;font-size:14px;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
+                    waitingDiv.innerHTML = '<div style="width:6px;height:6px;background:#d4af37;border-radius:50%;animation:pulse 1s infinite;"></div><span style="opacity:0.8;">Chờ chu kỳ mới...</span>';
+                    
+                    var container = document.getElementById('content-display') || document.body;
+                    container.appendChild(waitingDiv);
+                    return; // EXIT - Don't set up countdown/restart
+                }
                 
                 // Clear any existing loop timer and countdown
                 if (state.videoLoopTimer) {
