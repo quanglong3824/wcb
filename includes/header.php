@@ -34,7 +34,7 @@ $basePath = isset($basePath) ? $basePath : '../';
                 <span class="info-divider">|</span>
                 <a href="#" class="info-link"><i class="fas fa-book"></i> <span>Tài liệu</span></a>
                 <span class="info-divider">|</span>
-                <span class="info-version">v1.0</span>
+                <span class="info-version"><?php echo APP_VERSION; ?></span>
             </div>
         </div>
     </div>
