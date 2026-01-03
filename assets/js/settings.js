@@ -41,41 +41,90 @@ function switchTab(tabName) {
 
 // Load settings
 function loadSettings() {
-    fetch('api/get-settings.php')
+    // Show loading indicator
+    const container = document.querySelector('.settings-content');
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'loading-overlay';
+    loadingDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tải cài đặt...';
+    loadingDiv.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:999;';
+    
+    fetch('api/settings.php')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                populateSettings(data.settings);
+                populateSettings(data.grouped || {});
+            } else {
+                showAlert('error', 'Không thể tải cài đặt: ' + (data.message || 'Unknown error'));
             }
         })
         .catch(error => {
             console.error('Error loading settings:', error);
+            showAlert('error', 'Lỗi kết nối khi tải cài đặt');
+        })
+        .finally(() => {
+            if (loadingDiv.parentNode) {
+                loadingDiv.remove();
+            }
         });
 }
 
 // Populate settings form
-function populateSettings(settings) {
+function populateSettings(grouped) {
     // General settings
-    if (settings.general) {
-        document.getElementById('hotelName').value = settings.general.hotelName || '';
-        document.getElementById('systemName').value = settings.general.systemName || '';
-        document.getElementById('timezone').value = settings.general.timezone || 'Asia/Ho_Chi_Minh';
-        document.getElementById('language').value = settings.general.language || 'vi';
+    if (grouped.general) {
+        const gen = grouped.general;
+        if (gen.hotel_name) document.getElementById('hotelName').value = gen.hotel_name;
+        if (gen.system_name) document.getElementById('systemName').value = gen.system_name;
+        if (gen.timezone) document.getElementById('timezone').value = gen.timezone;
+        if (gen.language) document.getElementById('language').value = gen.language;
     }
     
-    // Display settings
-    if (settings.display) {
-        document.getElementById('autoRefresh').checked = settings.display.autoRefresh || false;
-        document.getElementById('refreshInterval').value = settings.display.refreshInterval || 30;
-        document.getElementById('defaultTransition').value = settings.display.defaultTransition || 'fade';
-        document.getElementById('transitionDuration').value = settings.display.transitionDuration || 1;
+    // Display settings (including auto reload)
+    if (grouped.display || grouped.auto_reload) {
+        const display = grouped.display || {};
+        const autoReload = grouped.auto_reload || {};
+        
+        // Basic display settings
+        if (display.auto_refresh !== undefined) {
+            document.getElementById('autoRefresh').checked = display.auto_refresh === '1' || display.auto_refresh === true;
+        }
+        if (display.refresh_interval) {
+            document.getElementById('refreshInterval').value = display.refresh_interval;
+        }
+        if (display.default_transition) {
+            document.getElementById('defaultTransition').value = display.default_transition;
+        }
+        if (display.transition_duration) {
+            document.getElementById('transitionDuration').value = display.transition_duration;
+        }
+        
+        // Auto reload settings
+        if (autoReload.auto_reload_enabled !== undefined) {
+            document.getElementById('autoReloadEnabled').checked = autoReload.auto_reload_enabled === '1' || autoReload.auto_reload_enabled === true;
+        }
+        if (autoReload.auto_reload_mode) {
+            document.getElementById('autoReloadMode').value = autoReload.auto_reload_mode;
+        }
+        if (autoReload.auto_reload_interval) {
+            document.getElementById('autoReloadInterval').value = autoReload.auto_reload_interval;
+        }
+        if (autoReload.auto_reload_threshold) {
+            document.getElementById('autoReloadThreshold').value = autoReload.auto_reload_threshold;
+        }
     }
     
     // Notification settings
-    if (settings.notification) {
-        document.getElementById('emailNotifications').checked = settings.notification.emailNotifications || false;
-        document.getElementById('notificationEmail').value = settings.notification.notificationEmail || '';
+    if (grouped.notification) {
+        const notif = grouped.notification;
+        if (notif.email_notifications !== undefined) {
+            document.getElementById('emailNotifications').checked = notif.email_notifications === '1' || notif.email_notifications === true;
+        }
+        if (notif.notification_email) {
+            document.getElementById('notificationEmail').value = notif.notification_email;
+        }
     }
+    
+    console.log('[Settings] Settings loaded successfully');
 }
 
 // Save general settings
@@ -83,22 +132,43 @@ function saveGeneralSettings(event) {
     event.preventDefault();
     
     const formData = new FormData(event.target);
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalHTML = submitBtn.innerHTML;
     
-    fetch('api/save-settings.php', {
+    // Show loading
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+    submitBtn.disabled = true;
+    
+    // Convert to JSON
+    const settings = {
+        hotel_name: formData.get('hotelName'),
+        system_name: formData.get('systemName'),
+        timezone: formData.get('timezone'),
+        language: formData.get('language')
+    };
+    
+    fetch('api/settings.php', {
         method: 'POST',
-        body: formData
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(settings)
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showAlert('success', 'Lưu cài đặt thành công!');
+            showAlert('success', 'Lưu cài đặt chung thành công!');
         } else {
-            showAlert('error', 'Lỗi: ' + data.message);
+            showAlert('error', 'Lỗi: ' + (data.message || 'Unknown error'));
         }
     })
     .catch(error => {
         console.error('Error:', error);
         showAlert('error', 'Có lỗi xảy ra khi lưu cài đặt');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalHTML;
+        submitBtn.disabled = false;
     });
 }
 
@@ -107,6 +177,12 @@ function saveDisplaySettings(event) {
     event.preventDefault();
     
     const formData = new FormData(event.target);
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalHTML = submitBtn.innerHTML;
+    
+    // Show loading
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+    submitBtn.disabled = true;
     
     // Convert to JSON for easier handling
     const settings = {
@@ -136,21 +212,39 @@ function saveDisplaySettings(event) {
             // Trigger reload all TVs to apply new settings
             setTimeout(() => {
                 if (confirm('Bạn có muốn reload tất cả TV để áp dụng cài đặt mới ngay không?')) {
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang reload TVs...';
+                    submitBtn.disabled = true;
+                    
                     fetch('api/reload-all-tvs.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' }
-                    }).then(() => {
-                        showAlert('success', 'Đã gửi lệnh reload đến tất cả TV');
+                    })
+                    .then(r => r.json())
+                    .then(result => {
+                        if (result.success) {
+                            showAlert('success', 'Đã gửi lệnh reload đến tất cả TV!');
+                        }
+                    })
+                    .finally(() => {
+                        submitBtn.innerHTML = originalHTML;
+                        submitBtn.disabled = false;
                     });
+                } else {
+                    submitBtn.innerHTML = originalHTML;
+                    submitBtn.disabled = false;
                 }
             }, 1000);
         } else {
-            showAlert('error', 'Lỗi: ' + data.message);
+            showAlert('error', 'Lỗi: ' + (data.message || 'Unknown error'));
+            submitBtn.innerHTML = originalHTML;
+            submitBtn.disabled = false;
         }
     })
     .catch(error => {
         console.error('Error:', error);
         showAlert('error', 'Có lỗi xảy ra khi lưu cài đặt');
+        submitBtn.innerHTML = originalHTML;
+        submitBtn.disabled = false;
     });
 }
 
@@ -159,22 +253,41 @@ function saveNotificationSettings(event) {
     event.preventDefault();
     
     const formData = new FormData(event.target);
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalHTML = submitBtn.innerHTML;
     
-    fetch('api/save-notification-settings.php', {
+    // Show loading
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+    submitBtn.disabled = true;
+    
+    // Convert to JSON
+    const settings = {
+        email_notifications: formData.get('emailNotifications') === 'on' ? '1' : '0',
+        notification_email: formData.get('notificationEmail')
+    };
+    
+    fetch('api/settings.php', {
         method: 'POST',
-        body: formData
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(settings)
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             showAlert('success', 'Lưu cài đặt thông báo thành công!');
         } else {
-            showAlert('error', 'Lỗi: ' + data.message);
+            showAlert('error', 'Lỗi: ' + (data.message || 'Unknown error'));
         }
     })
     .catch(error => {
         console.error('Error:', error);
         showAlert('error', 'Có lỗi xảy ra khi lưu cài đặt');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalHTML;
+        submitBtn.disabled = false;
     });
 }
 
