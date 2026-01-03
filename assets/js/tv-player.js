@@ -72,8 +72,10 @@
         
         // YouTube-style seamless loop
         videoLoopTimer: null,
+        videoLoopCountdownInterval: null, // Store countdown interval
         videoEndTime: null,
         videoLoopDelay: 30000, // 30 seconds delay before loop (fixed)
+        videoHasEnded: false, // Flag to prevent multiple 'ended' events
         
         // Track if currently showing "no content" state
         isShowingNoContent: false,
@@ -310,10 +312,17 @@
             state.videoLoopTimer = null;
         }
         
+        if (state.videoLoopCountdownInterval) {
+            clearInterval(state.videoLoopCountdownInterval);
+            state.videoLoopCountdownInterval = null;
+        }
+        
         var countdown = document.getElementById('loop-countdown');
         if (countdown && countdown.parentNode) {
             countdown.parentNode.removeChild(countdown);
         }
+        
+        state.videoHasEnded = false;
     }
 
     // Next slide with fade transition
@@ -327,10 +336,17 @@
             state.videoLoopTimer = null;
         }
         
+        if (state.videoLoopCountdownInterval) {
+            clearInterval(state.videoLoopCountdownInterval);
+            state.videoLoopCountdownInterval = null;
+        }
+        
         var countdown = document.getElementById('loop-countdown');
         if (countdown && countdown.parentNode) {
             countdown.parentNode.removeChild(countdown);
         }
+        
+        state.videoHasEnded = false;
 
         var display = document.getElementById('content-display');
         if (!display) return;
@@ -360,6 +376,25 @@
         }
 
         console.log('[TV Player] Displaying:', content.name, '- Type:', content.type);
+        
+        // Reset video ended flag when displaying new content
+        state.videoHasEnded = false;
+        
+        // Clear any existing countdown
+        if (state.videoLoopTimer) {
+            clearTimeout(state.videoLoopTimer);
+            state.videoLoopTimer = null;
+        }
+        
+        if (state.videoLoopCountdownInterval) {
+            clearInterval(state.videoLoopCountdownInterval);
+            state.videoLoopCountdownInterval = null;
+        }
+        
+        var existingCountdown = document.getElementById('loop-countdown');
+        if (existingCountdown && existingCountdown.parentNode) {
+            existingCountdown.parentNode.removeChild(existingCountdown);
+        }
         
         // Store current content ID
         state.currentContentId = content.id;
@@ -456,27 +491,49 @@
             
             // Handle video end - YouTube-style seamless loop with 30s delay
             video.addEventListener('ended', function() {
-                console.log('[TV Player] Video ended naturally');
+                // Prevent multiple 'ended' events
+                if (state.videoHasEnded) {
+                    console.log('[TV Player] Video already ended, ignoring duplicate event');
+                    return;
+                }
                 
-                // Clear any existing loop timer
+                state.videoHasEnded = true;
+                console.log('[TV Player] Video ended naturally at', video.currentTime, '/', video.duration);
+                
+                // Clear any existing loop timer and countdown
                 if (state.videoLoopTimer) {
                     clearTimeout(state.videoLoopTimer);
+                    state.videoLoopTimer = null;
                 }
                 
-                // Show black screen with countdown
+                if (state.videoLoopCountdownInterval) {
+                    clearInterval(state.videoLoopCountdownInterval);
+                    state.videoLoopCountdownInterval = null;
+                }
+                
+                // Remove any existing countdown
+                var existingCountdown = document.getElementById('loop-countdown');
+                if (existingCountdown && existingCountdown.parentNode) {
+                    existingCountdown.parentNode.removeChild(existingCountdown);
+                }
+                
+                // Show small, discreet countdown (bottom-right corner)
                 var countdownDiv = document.createElement('div');
                 countdownDiv.id = 'loop-countdown';
-                countdownDiv.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);color:#fff;padding:30px 50px;border-radius:10px;font-size:24px;z-index:9999;text-align:center;';
-                countdownDiv.innerHTML = '<div style="font-size:18px;margin-bottom:10px;">Video sẽ tự động lặp lại sau</div><div id="countdown-seconds" style="font-size:48px;font-weight:bold;color:#d4af37;">30</div><div style="font-size:14px;margin-top:10px;opacity:0.7;">giây</div>';
+                countdownDiv.style.cssText = 'position:fixed;bottom:20px;right:20px;background:rgba(0,0,0,0.7);color:#fff;padding:8px 15px;border-radius:20px;font-size:14px;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
+                countdownDiv.innerHTML = '<div style="width:6px;height:6px;background:#d4af37;border-radius:50%;animation:pulse 1s infinite;"></div><span style="opacity:0.8;">Lặp lại sau</span><span id="countdown-seconds" style="font-weight:bold;color:#d4af37;">30</span><span style="opacity:0.6;">s</span>';
                 
-                var container = video.parentElement || document.getElementById('content-display');
-                if (container) {
-                    container.appendChild(countdownDiv);
-                }
+                // Add pulse animation
+                var style = document.createElement('style');
+                style.textContent = '@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }';
+                document.head.appendChild(style);
+                
+                var container = document.getElementById('content-display') || document.body;
+                container.appendChild(countdownDiv);
                 
                 // Countdown timer
                 var secondsLeft = 30;
-                var countdownInterval = setInterval(function() {
+                state.videoLoopCountdownInterval = setInterval(function() {
                     secondsLeft--;
                     var countdownElement = document.getElementById('countdown-seconds');
                     if (countdownElement) {
@@ -484,7 +541,8 @@
                     }
                     
                     if (secondsLeft <= 0) {
-                        clearInterval(countdownInterval);
+                        clearInterval(state.videoLoopCountdownInterval);
+                        state.videoLoopCountdownInterval = null;
                     }
                 }, 1000);
                 
@@ -498,12 +556,20 @@
                         countdown.parentNode.removeChild(countdown);
                     }
                     
-                    // Restart video
+                    // Clear countdown interval
+                    if (state.videoLoopCountdownInterval) {
+                        clearInterval(state.videoLoopCountdownInterval);
+                        state.videoLoopCountdownInterval = null;
+                    }
+                    
+                    // Reset flag and restart video
+                    state.videoHasEnded = false;
                     video.currentTime = 0;
                     video.play().catch(function(e) {
                         console.error('[TV Player] Failed to restart video after loop:', e);
+                        state.videoHasEnded = false; // Reset on error too
                     });
-                }, state.videoLoopDelay);
+                }, 30000); // Exactly 30 seconds
             });
             
             // REMOVED: timeupdate early restart (caused conflicts with natural loop)
@@ -512,23 +578,31 @@
             // Handle video pause - ONLY resume if NOT at end (allow natural end)
             video.addEventListener('pause', function() {
                 // Don't resume if video ended naturally or is being changed
-                if (!state.isTransitioning && video.currentTime < video.duration - 1) {
-                    console.log('[TV Player] Video paused mid-play, resuming...');
+                // IMPORTANT: Check videoHasEnded flag to prevent interfering with loop
+                if (!state.isTransitioning && !state.videoHasEnded && video.currentTime < video.duration - 1) {
+                    console.log('[TV Player] Video paused mid-play at', video.currentTime, 'resuming...');
                     setTimeout(function() {
-                        video.play().catch(function(e) {
-                            console.log('[TV Player] Resume failed:', e);
-                        });
+                        if (!state.videoHasEnded) {
+                            video.play().catch(function(e) {
+                                console.log('[TV Player] Resume failed:', e);
+                            });
+                        }
                     }, 100);
                 } else {
-                    console.log('[TV Player] Video paused at end (normal behavior)');
+                    console.log('[TV Player] Video paused at end or already ended (normal behavior)');
                 }
             });
             
-            // Handle video suspend - try to resume
+            // Handle video suspend - ONLY try to resume if NOT ended
             video.addEventListener('suspend', function() {
-                console.warn('[TV Player] Video suspended, attempting to resume...');
+                if (state.videoHasEnded) {
+                    console.log('[TV Player] Video suspended after end (normal behavior)');
+                    return;
+                }
+                
+                console.warn('[TV Player] Video suspended mid-play, attempting to resume...');
                 setTimeout(function() {
-                    if (video.paused && !state.isTransitioning) {
+                    if (video.paused && !state.isTransitioning && !state.videoHasEnded) {
                         video.play().catch(function(e) {
                             console.log('[TV Player] Resume after suspend failed:', e);
                         });
@@ -537,7 +611,7 @@
             });
             
             // Simplified watchdog: Only restart if STUCK (not progressing)
-            // Don't interfere with natural video end
+            // Don't interfere with natural video end or loop process
             if (state.videoWatchdogTimer) {
                 clearInterval(state.videoWatchdogTimer);
             }
@@ -546,15 +620,17 @@
             var stuckCount = 0;
             
             state.videoWatchdogTimer = setInterval(function() {
-                if (!video || state.isTransitioning) {
+                if (!video || state.isTransitioning || state.videoHasEnded) {
                     return;
                 }
                 
-                // Check if video is stuck (not progressing)
-                if (video.currentTime === lastCheckedTime && !video.paused && video.currentTime < video.duration - 1) {
+                // Check if video is stuck (not progressing) - but NOT at end
+                var isAtEnd = video.currentTime >= video.duration - 1;
+                if (video.currentTime === lastCheckedTime && !video.paused && !isAtEnd) {
                     stuckCount++;
                     if (stuckCount >= 3) {
-                        console.warn('[TV Player] Video stuck (not progressing), forcing restart...');
+                        console.warn('[TV Player] Video stuck (not progressing) at', video.currentTime, 'forcing restart...');
+                        state.videoHasEnded = false;
                         video.currentTime = 0;
                         video.play().catch(function(e) {
                             console.error('[TV Player] Force play failed:', e);
