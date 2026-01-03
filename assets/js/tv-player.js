@@ -70,6 +70,11 @@
         currentVideoElement: null,
         currentContentId: null,
         
+        // YouTube-style seamless loop
+        videoLoopTimer: null,
+        videoEndTime: null,
+        videoLoopDelay: 30000, // 30 seconds delay before loop (fixed)
+        
         // Track if currently showing "no content" state
         isShowingNoContent: false,
         
@@ -298,12 +303,34 @@
             clearInterval(state.slideTimer);
             state.slideTimer = null;
         }
+        
+        // Clean up video loop timer and countdown
+        if (state.videoLoopTimer) {
+            clearTimeout(state.videoLoopTimer);
+            state.videoLoopTimer = null;
+        }
+        
+        var countdown = document.getElementById('loop-countdown');
+        if (countdown && countdown.parentNode) {
+            countdown.parentNode.removeChild(countdown);
+        }
     }
 
     // Next slide with fade transition
     function nextSlide() {
         if (state.isTransitioning) return;
         state.isTransitioning = true;
+        
+        // Clean up any video loop timer before transition
+        if (state.videoLoopTimer) {
+            clearTimeout(state.videoLoopTimer);
+            state.videoLoopTimer = null;
+        }
+        
+        var countdown = document.getElementById('loop-countdown');
+        if (countdown && countdown.parentNode) {
+            countdown.parentNode.removeChild(countdown);
+        }
 
         var display = document.getElementById('content-display');
         if (!display) return;
@@ -352,9 +379,10 @@
                 'onerror="this.src=\'' + basePath + 'assets/img/no-image.png\'">';
         } else if (content.type === 'video') {
             // Enhanced video tag for old TizenOS/Samsung TV compatibility
+            // REMOVE loop attribute - we handle it manually with 30s delay
             html = '<video ' +
                 'style="width:100%;height:100%;object-fit:cover;background:#000;" ' +
-                'autoplay loop muted playsinline ' +
+                'autoplay muted playsinline ' +
                 'preload="auto" ' +
                 'webkit-playsinline ' +
                 'x-webkit-airplay="allow" ' +
@@ -426,42 +454,73 @@
                 console.log('[TV Player] Video waiting for data');
             });
             
-            // Handle video end - force restart to prevent freeze
+            // Handle video end - YouTube-style seamless loop with 30s delay
             video.addEventListener('ended', function() {
-                console.log('[TV Player] Video ended, restarting...');
-                video.currentTime = 0;
-                video.play().catch(function(e) {
-                    console.error('[TV Player] Failed to restart video:', e);
-                });
-            });
-            
-            // CRITICAL: Monitor time and restart BEFORE video ends (2-3 seconds early)
-            // This prevents the freeze issue on old TizenOS TVs
-            video.addEventListener('timeupdate', function() {
-                if (!state.isTransitioning && video.duration > 0) {
-                    var timeRemaining = video.duration - video.currentTime;
-                    
-                    // Restart video when 2 seconds remaining (or at 95% completion)
-                    if (timeRemaining <= 2 || video.currentTime / video.duration >= 0.95) {
-                        console.log('[TV Player] Near end detected (', timeRemaining.toFixed(2), 's remaining), restarting early...');
-                        video.currentTime = 0;
-                        video.play().catch(function(e) {
-                            console.error('[TV Player] Early restart failed:', e);
-                        });
-                    }
+                console.log('[TV Player] Video ended naturally');
+                
+                // Clear any existing loop timer
+                if (state.videoLoopTimer) {
+                    clearTimeout(state.videoLoopTimer);
                 }
+                
+                // Show black screen with countdown
+                var countdownDiv = document.createElement('div');
+                countdownDiv.id = 'loop-countdown';
+                countdownDiv.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);color:#fff;padding:30px 50px;border-radius:10px;font-size:24px;z-index:9999;text-align:center;';
+                countdownDiv.innerHTML = '<div style="font-size:18px;margin-bottom:10px;">Video sẽ tự động lặp lại sau</div><div id="countdown-seconds" style="font-size:48px;font-weight:bold;color:#d4af37;">30</div><div style="font-size:14px;margin-top:10px;opacity:0.7;">giây</div>';
+                
+                var container = video.parentElement || document.getElementById('content-display');
+                if (container) {
+                    container.appendChild(countdownDiv);
+                }
+                
+                // Countdown timer
+                var secondsLeft = 30;
+                var countdownInterval = setInterval(function() {
+                    secondsLeft--;
+                    var countdownElement = document.getElementById('countdown-seconds');
+                    if (countdownElement) {
+                        countdownElement.textContent = secondsLeft;
+                    }
+                    
+                    if (secondsLeft <= 0) {
+                        clearInterval(countdownInterval);
+                    }
+                }, 1000);
+                
+                // Auto loop after 30 seconds
+                state.videoLoopTimer = setTimeout(function() {
+                    console.log('[TV Player] Auto-looping video after 30s delay (YouTube-style)');
+                    
+                    // Remove countdown
+                    var countdown = document.getElementById('loop-countdown');
+                    if (countdown && countdown.parentNode) {
+                        countdown.parentNode.removeChild(countdown);
+                    }
+                    
+                    // Restart video
+                    video.currentTime = 0;
+                    video.play().catch(function(e) {
+                        console.error('[TV Player] Failed to restart video after loop:', e);
+                    });
+                }, state.videoLoopDelay);
             });
             
-            // Handle video pause - auto resume (prevent freeze)
+            // REMOVED: timeupdate early restart (caused conflicts with natural loop)
+            // We now let video play to natural end, then loop after 30s
+            
+            // Handle video pause - ONLY resume if NOT at end (allow natural end)
             video.addEventListener('pause', function() {
-                console.log('[TV Player] Video paused, resuming...');
-                // Don't resume if video is being changed
-                if (!state.isTransitioning) {
+                // Don't resume if video ended naturally or is being changed
+                if (!state.isTransitioning && video.currentTime < video.duration - 1) {
+                    console.log('[TV Player] Video paused mid-play, resuming...');
                     setTimeout(function() {
                         video.play().catch(function(e) {
                             console.log('[TV Player] Resume failed:', e);
                         });
                     }, 100);
+                } else {
+                    console.log('[TV Player] Video paused at end (normal behavior)');
                 }
             });
             
@@ -477,41 +536,44 @@
                 }, 500);
             });
             
-            // Additional safety: Check video status every 2 seconds
-            // Clear any existing watchdog first
+            // Simplified watchdog: Only restart if STUCK (not progressing)
+            // Don't interfere with natural video end
             if (state.videoWatchdogTimer) {
                 clearInterval(state.videoWatchdogTimer);
             }
+            
+            var lastCheckedTime = 0;
+            var stuckCount = 0;
             
             state.videoWatchdogTimer = setInterval(function() {
                 if (!video || state.isTransitioning) {
                     return;
                 }
                 
-                // If video is paused but should be playing, restart it
-                if (video.paused && video.currentTime >= 0) {
-                    console.warn('[TV Player] Video stuck in pause, forcing play...');
-                    video.play().catch(function(e) {
-                        console.error('[TV Player] Force play failed:', e);
-                    });
+                // Check if video is stuck (not progressing)
+                if (video.currentTime === lastCheckedTime && !video.paused && video.currentTime < video.duration - 1) {
+                    stuckCount++;
+                    if (stuckCount >= 3) {
+                        console.warn('[TV Player] Video stuck (not progressing), forcing restart...');
+                        video.currentTime = 0;
+                        video.play().catch(function(e) {
+                            console.error('[TV Player] Force play failed:', e);
+                        });
+                        stuckCount = 0;
+                    }
+                } else {
+                    stuckCount = 0;
                 }
                 
-                // If video is at the end, restart immediately
-                if (video.duration > 0 && video.currentTime >= video.duration - 0.1) {
-                    console.log('[TV Player] Video at end in check, restarting...');
-                    video.currentTime = 0;
-                    video.play().catch(function(e) {
-                        console.error('[TV Player] Check restart failed:', e);
-                    });
-                }
-            }, 2000);
+                lastCheckedTime = video.currentTime;
+            }, 3000);
             
             // Force load and play
             video.load();
             
-            // Ensure loop attribute is set (backup for old browsers)
-            video.loop = true;
-            video.setAttribute('loop', 'loop');
+            // REMOVE loop attribute - we handle loop manually with 30s delay
+            video.loop = false;
+            video.removeAttribute('loop');
             
             // Try to play with multiple attempts for old browsers
             var playAttempts = 0;
