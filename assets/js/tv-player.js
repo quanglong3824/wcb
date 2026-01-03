@@ -29,7 +29,11 @@
         // Keep-alive settings to prevent Samsung TV screensaver
         KEEPALIVE_INTERVAL: 30000,   // Keep-alive AJAX ping every 30 seconds
         PIXEL_FLICKER_INTERVAL: 45000, // Pixel color change every 45 seconds
-        DOM_MOVE_INTERVAL: 60000     // Move invisible DOM element every 60 seconds
+        DOM_MOVE_INTERVAL: 60000,    // Move invisible DOM element every 60 seconds
+        
+        // AUTO PAGE RELOAD - Fixed timer from page load
+        // Video 1:36 (96s) + 4s buffer = 100s (1m40s)
+        AUTO_PAGE_RELOAD_SECONDS: 100  // Reload page every 1 minute 40 seconds
     };
 
     // State
@@ -70,12 +74,15 @@
         currentVideoElement: null,
         currentContentId: null,
         
-        // YouTube-style seamless loop
+        // YouTube-style seamless loop (DISABLED - using fixed page reload instead)
         videoLoopTimer: null,
-        videoLoopCountdownInterval: null, // Store countdown interval
+        videoLoopCountdownInterval: null,
         videoEndTime: null,
-        videoLoopDelay: 30000, // 30 seconds delay before loop (fixed)
-        videoHasEnded: false, // Flag to prevent multiple 'ended' events
+        videoLoopDelay: 30000,
+        videoHasEnded: false,
+        
+        // SIMPLE AUTO PAGE RELOAD - Fixed timer from page load
+        autoPageReloadTimer: null,
         
         // Track if currently showing "no content" state
         isShowingNoContent: false,
@@ -131,6 +138,14 @@
 
             // Setup content refresh
             state.contentRefreshTimer = setInterval(loadContent, CONFIG.CONTENT_REFRESH);
+            
+            // ============================================
+            // SIMPLE AUTO PAGE RELOAD - Fixed timer
+            // Video 1:36 + buffer = 1:40 (100 seconds)
+            // This ensures video loops properly on old TVs
+            // where 'ended' event doesn't fire correctly
+            // ============================================
+            startSimpleAutoPageReload();
         });
 
         // Add meta refresh as fallback
@@ -489,136 +504,47 @@
                 console.log('[TV Player] Video waiting for data');
             });
             
-            // Handle video end - YouTube-style seamless loop with 30s delay
+            // Handle video end - SIMPLIFIED
+            // We use Simple Auto Page Reload (fixed timer) instead of relying on video events
+            // This works reliably on old TVs where 'ended' event may not fire correctly
             video.addEventListener('ended', function() {
-                // Prevent multiple 'ended' events
-                if (state.videoHasEnded) {
-                    console.log('[TV Player] Video already ended, ignoring duplicate event');
+                state.videoHasEnded = true;
+                console.log('[TV Player] Video ended at', video.currentTime.toFixed(2), '/', video.duration.toFixed(2));
+                console.log('[TV Player] Page will auto-reload in remaining time. No action needed.');
+                
+                // Just show a simple message - page will reload via Simple Auto Page Reload timer
+                // No need to manually restart video or set timers
+            });
+            
+            // Handle video pause - ONLY resume if stuck mid-play (not at end)
+            video.addEventListener('pause', function() {
+                // If video paused near the end, let it be (page will reload)
+                if (video.duration > 0 && video.currentTime >= video.duration - 2) {
+                    console.log('[TV Player] Video paused at end - page will auto-reload');
                     return;
                 }
                 
-                state.videoHasEnded = true;
-                console.log('[TV Player] Video ended naturally at', video.currentTime, '/', video.duration);
-                console.log('[TV Player] Auto Reload:', state.autoReloadEnabled, 'Mode:', state.autoReloadMode);
-                
-                // CRITICAL: If Auto Reload Smart mode is enabled, DON'T use countdown loop
-                // Let Auto Reload handle the restart instead
-                if (state.autoReloadEnabled && state.autoReloadMode === 'smart') {
-                    console.log('[TV Player] Smart Auto Reload is active, skipping countdown loop - letting Auto Reload handle restart');
-                    // Show a simple "Waiting for next cycle" message instead
-                    var waitingDiv = document.createElement('div');
-                    waitingDiv.id = 'loop-countdown';
-                    waitingDiv.style.cssText = 'position:fixed;bottom:20px;right:20px;background:rgba(0,0,0,0.7);color:#fff;padding:8px 15px;border-radius:20px;font-size:14px;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
-                    waitingDiv.innerHTML = '<div style="width:6px;height:6px;background:#d4af37;border-radius:50%;animation:pulse 1s infinite;"></div><span style="opacity:0.8;">Chờ chu kỳ mới...</span>';
-                    
-                    var container = document.getElementById('content-display') || document.body;
-                    container.appendChild(waitingDiv);
-                    return; // EXIT - Don't set up countdown/restart
-                }
-                
-                // Clear any existing loop timer and countdown
-                if (state.videoLoopTimer) {
-                    clearTimeout(state.videoLoopTimer);
-                    state.videoLoopTimer = null;
-                }
-                
-                if (state.videoLoopCountdownInterval) {
-                    clearInterval(state.videoLoopCountdownInterval);
-                    state.videoLoopCountdownInterval = null;
-                }
-                
-                // Remove any existing countdown
-                var existingCountdown = document.getElementById('loop-countdown');
-                if (existingCountdown && existingCountdown.parentNode) {
-                    existingCountdown.parentNode.removeChild(existingCountdown);
-                }
-                
-                // Show small, discreet countdown (bottom-right corner)
-                var countdownDiv = document.createElement('div');
-                countdownDiv.id = 'loop-countdown';
-                countdownDiv.style.cssText = 'position:fixed;bottom:20px;right:20px;background:rgba(0,0,0,0.7);color:#fff;padding:8px 15px;border-radius:20px;font-size:14px;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
-                countdownDiv.innerHTML = '<div style="width:6px;height:6px;background:#d4af37;border-radius:50%;animation:pulse 1s infinite;"></div><span style="opacity:0.8;">Lặp lại sau</span><span id="countdown-seconds" style="font-weight:bold;color:#d4af37;">30</span><span style="opacity:0.6;">s</span>';
-                
-                // Add pulse animation
-                var style = document.createElement('style');
-                style.textContent = '@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }';
-                document.head.appendChild(style);
-                
-                var container = document.getElementById('content-display') || document.body;
-                container.appendChild(countdownDiv);
-                
-                // Countdown timer
-                var secondsLeft = 30;
-                state.videoLoopCountdownInterval = setInterval(function() {
-                    secondsLeft--;
-                    var countdownElement = document.getElementById('countdown-seconds');
-                    if (countdownElement) {
-                        countdownElement.textContent = secondsLeft;
-                    }
-                    
-                    if (secondsLeft <= 0) {
-                        clearInterval(state.videoLoopCountdownInterval);
-                        state.videoLoopCountdownInterval = null;
-                    }
-                }, 1000);
-                
-                // Auto loop after 30 seconds
-                state.videoLoopTimer = setTimeout(function() {
-                    console.log('[TV Player] Auto-looping video after 30s delay (YouTube-style)');
-                    
-                    // Remove countdown
-                    var countdown = document.getElementById('loop-countdown');
-                    if (countdown && countdown.parentNode) {
-                        countdown.parentNode.removeChild(countdown);
-                    }
-                    
-                    // Clear countdown interval
-                    if (state.videoLoopCountdownInterval) {
-                        clearInterval(state.videoLoopCountdownInterval);
-                        state.videoLoopCountdownInterval = null;
-                    }
-                    
-                    // Reset flag and restart video
-                    state.videoHasEnded = false;
-                    video.currentTime = 0;
-                    video.play().catch(function(e) {
-                        console.error('[TV Player] Failed to restart video after loop:', e);
-                        state.videoHasEnded = false; // Reset on error too
-                    });
-                }, 30000); // Exactly 30 seconds
-            });
-            
-            // REMOVED: timeupdate early restart (caused conflicts with natural loop)
-            // We now let video play to natural end, then loop after 30s
-            
-            // Handle video pause - ONLY resume if NOT at end (allow natural end)
-            video.addEventListener('pause', function() {
-                // Don't resume if video ended naturally or is being changed
-                // IMPORTANT: Check videoHasEnded flag to prevent interfering with loop
-                if (!state.isTransitioning && !state.videoHasEnded && video.currentTime < video.duration - 1) {
-                    console.log('[TV Player] Video paused mid-play at', video.currentTime, 'resuming...');
+                // If paused mid-play and not transitioning, try to resume
+                if (!state.isTransitioning && video.currentTime < video.duration - 2) {
+                    console.log('[TV Player] Video paused mid-play, resuming...');
                     setTimeout(function() {
-                        if (!state.videoHasEnded) {
-                            video.play().catch(function(e) {
-                                console.log('[TV Player] Resume failed:', e);
-                            });
-                        }
+                        video.play().catch(function(e) {
+                            console.log('[TV Player] Resume failed:', e);
+                        });
                     }, 100);
-                } else {
-                    console.log('[TV Player] Video paused at end or already ended (normal behavior)');
                 }
             });
             
-            // Handle video suspend - ONLY try to resume if NOT ended
+            // Handle video suspend - try to resume if mid-play
             video.addEventListener('suspend', function() {
-                if (state.videoHasEnded) {
-                    console.log('[TV Player] Video suspended after end (normal behavior)');
+                if (video.duration > 0 && video.currentTime >= video.duration - 2) {
+                    console.log('[TV Player] Video suspended at end - page will auto-reload');
                     return;
                 }
                 
                 console.warn('[TV Player] Video suspended mid-play, attempting to resume...');
                 setTimeout(function() {
-                    if (video.paused && !state.isTransitioning && !state.videoHasEnded) {
+                    if (video.paused && !state.isTransitioning) {
                         video.play().catch(function(e) {
                             console.log('[TV Player] Resume after suspend failed:', e);
                         });
@@ -626,8 +552,7 @@
                 }, 500);
             });
             
-            // Simplified watchdog: Only restart if STUCK (not progressing)
-            // Don't interfere with natural video end or loop process
+            // Simplified watchdog: Only restart if video is stuck mid-play
             if (state.videoWatchdogTimer) {
                 clearInterval(state.videoWatchdogTimer);
             }
@@ -636,18 +561,18 @@
             var stuckCount = 0;
             
             state.videoWatchdogTimer = setInterval(function() {
-                if (!video || state.isTransitioning || state.videoHasEnded) {
+                if (!video || state.isTransitioning) return;
+                
+                // Skip if video is near the end (let page reload handle it)
+                if (video.duration > 0 && video.currentTime >= video.duration - 2) {
                     return;
                 }
                 
-                // Check if video is stuck (not progressing) - but NOT at end
-                var isAtEnd = video.currentTime >= video.duration - 1;
-                if (video.currentTime === lastCheckedTime && !video.paused && !isAtEnd) {
+                // Check if video is stuck (not progressing)
+                if (video.currentTime === lastCheckedTime && !video.paused) {
                     stuckCount++;
                     if (stuckCount >= 3) {
-                        console.warn('[TV Player] Video stuck (not progressing) at', video.currentTime, 'forcing restart...');
-                        state.videoHasEnded = false;
-                        video.currentTime = 0;
+                        console.warn('[TV Player] Video stuck mid-play, forcing resume...');
                         video.play().catch(function(e) {
                             console.error('[TV Player] Force play failed:', e);
                         });
@@ -1561,6 +1486,80 @@
             }
 
             window.location.href = rootPath + '?auto_reload=' + Date.now();
+        }, 1000);
+    }
+
+    // ============================================
+    // SIMPLE AUTO PAGE RELOAD
+    // Fixed timer from page load - doesn't rely on video events
+    // Perfect for old TVs where 'ended' event doesn't fire
+    // ============================================
+    
+    /**
+     * Start simple auto page reload
+     * Reloads page after CONFIG.AUTO_PAGE_RELOAD_SECONDS (100s = 1m40s)
+     * This ensures video loops properly regardless of browser events
+     */
+    function startSimpleAutoPageReload() {
+        // Clear any existing timer
+        if (state.autoPageReloadTimer) {
+            clearTimeout(state.autoPageReloadTimer);
+            state.autoPageReloadTimer = null;
+        }
+        
+        var delayMs = CONFIG.AUTO_PAGE_RELOAD_SECONDS * 1000;
+        var delayDisplay = CONFIG.AUTO_PAGE_RELOAD_SECONDS;
+        
+        console.log('[TV Player] === SIMPLE AUTO PAGE RELOAD ===' );
+        console.log('[TV Player] Page will auto-reload in', delayDisplay, 'seconds (' + Math.floor(delayDisplay/60) + 'm' + (delayDisplay%60) + 's)');
+        console.log('[TV Player] Timer started at:', new Date().toLocaleTimeString());
+        
+        // Show discreet timer indicator (bottom-left corner)
+        showAutoReloadIndicator(delayDisplay);
+        
+        // Set timer to reload page
+        state.autoPageReloadTimer = setTimeout(function() {
+            console.log('[TV Player] Auto page reload triggered!');
+            
+            // Reload current page (not root)
+            window.location.reload(true);
+        }, delayMs);
+    }
+    
+    /**
+     * Show discreet auto-reload indicator with countdown
+     */
+    function showAutoReloadIndicator(totalSeconds) {
+        // Remove existing indicator
+        var existing = document.getElementById('auto-reload-indicator');
+        if (existing) existing.remove();
+        
+        // Create indicator
+        var indicator = document.createElement('div');
+        indicator.id = 'auto-reload-indicator';
+        indicator.style.cssText = 'position:fixed;bottom:10px;left:10px;background:rgba(0,0,0,0.5);color:#fff;padding:5px 10px;border-radius:15px;font-size:11px;z-index:9999;opacity:0.6;font-family:monospace;';
+        
+        var secondsLeft = totalSeconds;
+        
+        function updateIndicator() {
+            var mins = Math.floor(secondsLeft / 60);
+            var secs = secondsLeft % 60;
+            indicator.innerHTML = '↻ ' + mins + ':' + (secs < 10 ? '0' : '') + secs;
+        }
+        
+        updateIndicator();
+        document.body.appendChild(indicator);
+        
+        // Update countdown every second
+        var countdownInterval = setInterval(function() {
+            secondsLeft--;
+            if (secondsLeft <= 0) {
+                clearInterval(countdownInterval);
+                indicator.innerHTML = '↻ Reloading...';
+                indicator.style.background = 'rgba(212, 175, 55, 0.8)';
+            } else {
+                updateIndicator();
+            }
         }, 1000);
     }
 
