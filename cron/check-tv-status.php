@@ -6,6 +6,7 @@ if (php_sapi_name() !== 'cli' && !defined('CRON_ALLOWED')) {
 }
 
 require_once dirname(__DIR__) . '/config/php/config.php';
+require_once dirname(__DIR__) . '/includes/logger.php';
 
 $conn = getDBConnection();
 
@@ -47,6 +48,10 @@ while ($tv = $result->fetch_assoc()) {
         $updateStmt->execute();
 
         echo "TV {$tv['name']}: {$tv['status']} -> {$newStatus}\n";
+
+        // Log to Activity Logs
+        $description = "TV '{$tv['name']}' changed status from {$tv['status']} to {$newStatus}";
+        logActivity($conn, 'tv_status_change', 'tv', $tv['id'], $description, 0); // User 0 for System
 
         // Track newly offline TVs
         if ($newStatus === 'offline') {

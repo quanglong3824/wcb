@@ -8,7 +8,7 @@ let itemsPerPage = 20;
 let totalPages = 1;
 
 // Initialize
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     loadLogs();
     loadUsers();
     setupEventListeners();
@@ -19,31 +19,31 @@ function setupEventListeners() {
     // Search input
     const searchInput = document.getElementById('searchInput');
     let searchTimeout;
-    searchInput.addEventListener('input', function() {
+    searchInput.addEventListener('input', function () {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
             currentPage = 1;
             loadLogs();
         }, 300);
     });
-    
+
     // Filters
-    document.getElementById('actionFilter').addEventListener('change', function() {
+    document.getElementById('actionFilter').addEventListener('change', function () {
         currentPage = 1;
         loadLogs();
     });
-    
-    document.getElementById('userFilter').addEventListener('change', function() {
+
+    document.getElementById('userFilter').addEventListener('change', function () {
         currentPage = 1;
         loadLogs();
     });
-    
-    document.getElementById('dateFrom').addEventListener('change', function() {
+
+    document.getElementById('dateFrom').addEventListener('change', function () {
         currentPage = 1;
         loadLogs();
     });
-    
-    document.getElementById('dateTo').addEventListener('change', function() {
+
+    document.getElementById('dateTo').addEventListener('change', function () {
         currentPage = 1;
         loadLogs();
     });
@@ -53,14 +53,14 @@ function setupEventListeners() {
 async function loadUsers() {
     try {
         const response = await fetch('api/logs.php?get_users=1');
-        
+
         // Bỏ qua nếu không có quyền
         if (response.status === 403) {
             return;
         }
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             const select = document.getElementById('userFilter');
             data.users.forEach(user => {
@@ -86,14 +86,14 @@ async function loadLogs() {
             </td>
         </tr>
     `;
-    
+
     try {
         const search = document.getElementById('searchInput').value;
         const action = document.getElementById('actionFilter').value;
         const userId = document.getElementById('userFilter').value;
         const dateFrom = document.getElementById('dateFrom').value;
         const dateTo = document.getElementById('dateTo').value;
-        
+
         const params = new URLSearchParams({
             page: currentPage,
             limit: itemsPerPage,
@@ -103,18 +103,18 @@ async function loadLogs() {
             date_from: dateFrom,
             date_to: dateTo
         });
-        
+
         const response = await fetch(`api/logs.php?${params}`);
-        
+
         // Xử lý lỗi 403
         if (response.status === 403) {
             const data = await response.json();
             showPermissionError(data.message || 'Không có quyền xem Activity Logs');
             return;
         }
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
             logs = data.logs;
             totalPages = data.total_pages;
@@ -148,7 +148,7 @@ function showPermissionError(message) {
 // Render logs table
 function renderLogs() {
     const tbody = document.getElementById('logsTableBody');
-    
+
     if (logs.length === 0) {
         tbody.innerHTML = `
             <tr>
@@ -163,18 +163,37 @@ function renderLogs() {
         `;
         return;
     }
-    
+
     tbody.innerHTML = logs.map(log => {
         const actionClass = getActionClass(log.action);
         const actionLabel = getActionLabel(log.action);
         const entityIcon = getEntityIcon(log.entity_type);
-        
+
+        let countBadge = '';
+        if (log.count && log.count > 1) {
+            countBadge = `<span class="badge-count" title="Lặp lại ${log.count} lần">x${log.count}</span>`;
+        }
+
+        // Handle timestamp
+        let timeDisplay = formatDate(log.created_at);
+        if (log.count > 1 && log.first_created_at) {
+            // Optional: Show range or just the latest
+        }
+
         return `
             <tr>
                 <td>${log.id}</td>
-                <td>${formatDate(log.created_at)}</td>
+                <td>
+                    ${timeDisplay}
+                </td>
                 <td>${escapeHtml(log.user_name || log.username || 'System')}</td>
-                <td><span class="action-badge ${actionClass}"><i class="fas fa-${getActionIcon(log.action)}"></i> ${actionLabel}</span></td>
+                <td>
+                    <span class="action-badge ${actionClass}">
+                        <i class="fas fa-${getActionIcon(log.action)}"></i> 
+                        ${actionLabel}
+                        ${countBadge}
+                    </span>
+                </td>
                 <td>
                     <span class="entity-type">
                         <i class="fas fa-${entityIcon}"></i>
@@ -190,61 +209,6 @@ function renderLogs() {
 }
 
 // Get action class for styling
-function getActionClass(action) {
-    const classes = {
-        'login': 'login',
-        'logout': 'logout',
-        'upload': 'upload',
-        'assign': 'assign',
-        'unassign': 'unassign',
-        'delete': 'delete',
-        'update': 'update',
-        'create_user': 'create_user',
-        'update_user': 'update',
-        'delete_user': 'delete',
-        'password_reset': 'password_reset',
-        'reset_password': 'password_reset'
-    };
-    return classes[action] || 'default';
-}
-
-// Get action label
-function getActionLabel(action) {
-    const labels = {
-        'login': 'Đăng nhập',
-        'logout': 'Đăng xuất',
-        'upload': 'Upload',
-        'assign': 'Gán media',
-        'unassign': 'Bỏ gán',
-        'delete': 'Xóa',
-        'update': 'Cập nhật',
-        'create_user': 'Tạo user',
-        'update_user': 'Sửa user',
-        'delete_user': 'Xóa user',
-        'password_reset': 'Reset MK',
-        'reset_password': 'Reset MK'
-    };
-    return labels[action] || action;
-}
-
-// Get action icon
-function getActionIcon(action) {
-    const icons = {
-        'login': 'sign-in-alt',
-        'logout': 'sign-out-alt',
-        'upload': 'upload',
-        'assign': 'link',
-        'unassign': 'unlink',
-        'delete': 'trash',
-        'update': 'edit',
-        'create_user': 'user-plus',
-        'update_user': 'user-edit',
-        'delete_user': 'user-minus',
-        'password_reset': 'key',
-        'reset_password': 'key'
-    };
-    return icons[action] || 'circle';
-}
 
 // Get entity icon
 function getEntityIcon(entityType) {
@@ -261,46 +225,46 @@ function getEntityIcon(entityType) {
 // Render pagination
 function renderPagination() {
     const container = document.getElementById('paginationContainer');
-    
+
     if (totalPages <= 1) {
         container.innerHTML = '';
         return;
     }
-    
+
     let html = '';
-    
+
     // Previous button
     html += `<button class="pagination-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
         <i class="fas fa-chevron-left"></i>
     </button>`;
-    
+
     // Page numbers
     const startPage = Math.max(1, currentPage - 2);
     const endPage = Math.min(totalPages, currentPage + 2);
-    
+
     if (startPage > 1) {
         html += `<button class="pagination-btn" onclick="goToPage(1)">1</button>`;
         if (startPage > 2) {
             html += `<span class="pagination-info">...</span>`;
         }
     }
-    
+
     for (let i = startPage; i <= endPage; i++) {
         html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
     }
-    
+
     if (endPage < totalPages) {
         if (endPage < totalPages - 1) {
             html += `<span class="pagination-info">...</span>`;
         }
         html += `<button class="pagination-btn" onclick="goToPage(${totalPages})">${totalPages}</button>`;
     }
-    
+
     // Next button
     html += `<button class="pagination-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
         <i class="fas fa-chevron-right"></i>
     </button>`;
-    
+
     container.innerHTML = html;
 }
 
@@ -319,7 +283,7 @@ async function exportLogs() {
         const userId = document.getElementById('userFilter').value;
         const dateFrom = document.getElementById('dateFrom').value;
         const dateTo = document.getElementById('dateTo').value;
-        
+
         const params = new URLSearchParams({
             export: 'csv',
             search: search,
@@ -328,7 +292,7 @@ async function exportLogs() {
             date_from: dateFrom,
             date_to: dateTo
         });
-        
+
         window.location.href = `api/logs.php?${params}`;
     } catch (error) {
         console.error('Error exporting logs:', error);
@@ -364,14 +328,14 @@ function showError(message) {
 function showNotification(message, type = 'info') {
     const existing = document.querySelector('.notification');
     if (existing) existing.remove();
-    
+
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
     notification.innerHTML = `
         <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
         <span>${message}</span>
     `;
-    
+
     notification.style.cssText = `
         position: fixed;
         top: 20px;
@@ -387,9 +351,9 @@ function showNotification(message, type = 'info') {
         box-shadow: 0 5px 20px rgba(0,0,0,0.3);
         ${type === 'error' ? 'background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff;' : ''}
     `;
-    
+
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
         notification.style.animation = 'slideOut 0.3s ease';
         setTimeout(() => notification.remove(), 300);

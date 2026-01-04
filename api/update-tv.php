@@ -1,6 +1,7 @@
 <?php
 require_once '../includes/auth-check.php';
 require_once '../config/php/config.php';
+require_once '../includes/logger.php';
 
 header('Content-Type: application/json');
 
@@ -30,7 +31,7 @@ if (empty($tvName) || empty($tvLocation) || empty($tvFolder)) {
     exit;
 }
 
-// Validate folder name (cho phép chữ thường, số, gạch ngang, gạch dưới, và dấu /)
+// Validate folder name
 if (!preg_match('/^[a-z0-9_\-\/]+$/', $tvFolder)) {
     echo json_encode(['success' => false, 'message' => 'Tên thư mục chỉ được chứa chữ thường, số, gạch ngang, gạch dưới và dấu /']);
     exit;
@@ -87,37 +88,30 @@ $stmt = $conn->prepare("UPDATE tvs SET
     updated_at = NOW() 
     WHERE id = ?");
 
-$stmt->bind_param("sssssssi", 
-    $tvName, 
-    $tvLocation, 
-    $tvFolder, 
+$stmt->bind_param(
+    "sssssssi",
+    $tvName,
+    $tvLocation,
+    $tvFolder,
     $displayUrl,
-    $tvIpAddress, 
-    $tvStatus, 
-    $tvDescription, 
+    $tvIpAddress,
+    $tvStatus,
+    $tvDescription,
     $tvId
 );
 
 if ($stmt->execute()) {
-    // Ghi log (bỏ qua lỗi nếu có)
-    try {
-        $logStmt = $conn->prepare("INSERT INTO activity_logs (user_id, action, entity_type, entity_id, description, ip_address) VALUES (?, 'update', 'tv', ?, ?, ?)");
-        $logDesc = "Cập nhật thông tin TV: " . $tvName;
-        $ip = $_SERVER['REMOTE_ADDR'];
-        $logStmt->bind_param("iiss", $_SESSION['user_id'], $tvId, $logDesc, $ip);
-        $logStmt->execute();
-    } catch (Exception $e) {
-        error_log("TV update logging error: " . $e->getMessage());
-    }
-    
+    // Ghi log via Logger
+    logActivity($conn, 'update', 'tv', $tvId, "Cập nhật thông tin TV: " . $tvName);
+
     echo json_encode([
-        'success' => true, 
+        'success' => true,
         'message' => 'Cập nhật thông tin TV thành công',
         'tv_id' => $tvId
     ]);
 } else {
     echo json_encode([
-        'success' => false, 
+        'success' => false,
         'message' => 'Lỗi khi cập nhật: ' . $conn->error
     ]);
 }

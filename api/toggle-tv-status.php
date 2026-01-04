@@ -1,6 +1,7 @@
 <?php
 require_once '../includes/auth-check.php';
 require_once '../config/php/config.php';
+require_once '../includes/logger.php';
 
 header('Content-Type: application/json');
 
@@ -54,21 +55,18 @@ try {
     $updateStmt = $conn->prepare("UPDATE tvs SET status = ? WHERE id = ?");
     $updateStmt->bind_param("si", $status, $tvId);
     $updateStmt->execute();
-    
-    // Ghi log
-    $logStmt = $conn->prepare("INSERT INTO activity_logs (user_id, action, entity_type, entity_id, description, ip_address) VALUES (?, 'toggle_status', 'tv', ?, ?, ?)");
+
+    // Ghi log via Logger
     $logDesc = ($status === 'online' ? 'Bật' : 'Tắt') . " TV '{$tv['name']}'";
-    $ip = $_SERVER['REMOTE_ADDR'];
-    $logStmt->bind_param("iiss", $_SESSION['user_id'], $tvId, $logDesc, $ip);
-    $logStmt->execute();
-    
+    logActivity($conn, 'toggle_status', 'tv', $tvId, $logDesc);
+
     echo json_encode([
         'success' => true,
         'message' => 'Đã cập nhật trạng thái TV',
         'tv_name' => $tv['name'],
         'status' => $status
     ]);
-    
+
 } catch (Exception $e) {
     echo json_encode([
         'success' => false,

@@ -1,6 +1,7 @@
 <?php
 require_once '../includes/auth-check.php';
 require_once '../config/php/config.php';
+require_once '../includes/logger.php';
 
 header('Content-Type: application/json');
 
@@ -60,18 +61,11 @@ if ($deleteStmt->execute()) {
     if ($info['is_default']) {
         $conn->query("UPDATE tvs SET default_content_id = NULL WHERE id = {$tvId}");
     }
-    
+
     // Ghi log
-    try {
-        $logStmt = $conn->prepare("INSERT INTO activity_logs (user_id, action, entity_type, entity_id, description, ip_address) VALUES (?, 'unassign', 'media', ?, ?, ?)");
-        $logDesc = "Hủy gán media '{$info['media_name']}' khỏi TV '{$info['tv_name']}'";
-        $ip = $_SERVER['REMOTE_ADDR'];
-        $logStmt->bind_param("iiss", $_SESSION['user_id'], $mediaId, $logDesc, $ip);
-        $logStmt->execute();
-    } catch (Exception $e) {
-        error_log("Unassign logging error: " . $e->getMessage());
-    }
-    
+    $logDesc = "Hủy gán media '{$info['media_name']}' khỏi TV '{$info['tv_name']}'";
+    logActivity($conn, 'unassign', 'media', $mediaId, $logDesc);
+
     echo json_encode([
         'success' => true,
         'message' => 'Hủy gán thành công'

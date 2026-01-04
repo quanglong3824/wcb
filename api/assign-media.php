@@ -1,6 +1,7 @@
 <?php
 require_once '../includes/auth-check.php';
 require_once '../config/php/config.php';
+require_once '../includes/logger.php';
 
 header('Content-Type: application/json');
 
@@ -57,29 +58,29 @@ try {
     $assignedCount = 0;
     $skippedCount = 0;
     $assignedTVs = [];
-    
+
     foreach ($tvIds as $tvId) {
         $tvId = intval($tvId);
-        
+
         // Kiểm tra TV có tồn tại không
         $tvStmt = $conn->prepare("SELECT id, name FROM tvs WHERE id = ?");
         $tvStmt->bind_param("i", $tvId);
         $tvStmt->execute();
         $tvResult = $tvStmt->get_result();
-        
+
         if ($tvResult->num_rows === 0) {
             $skippedCount++;
             continue;
         }
-        
+
         $tv = $tvResult->fetch_assoc();
-        
+
         // Kiểm tra đã gán chưa
         $checkStmt = $conn->prepare("SELECT id FROM tv_media_assignments WHERE tv_id = ? AND media_id = ?");
         $checkStmt->bind_param("ii", $tvId, $mediaId);
         $checkStmt->execute();
         $checkResult = $checkStmt->get_result();
-        
+
         if ($checkResult->num_rows > 0) {
             // Đã gán rồi, cập nhật is_default nếu cần
             if ($isDefault) {
@@ -87,7 +88,7 @@ try {
                 $updateTvStmt = $conn->prepare("UPDATE tvs SET default_content_id = ? WHERE id = ?");
                 $updateTvStmt->bind_param("ii", $mediaId, $tvId);
                 $updateTvStmt->execute();
-                
+
                 // Cập nhật is_default trong assignments (tránh trigger)
                 $conn->query("UPDATE tv_media_assignments SET is_default = 0 WHERE tv_id = {$tvId} AND media_id != {$mediaId}");
                 $conn->query("UPDATE tv_media_assignments SET is_default = 1 WHERE tv_id = {$tvId} AND media_id = {$mediaId}");
@@ -95,36 +96,31 @@ try {
             $skippedCount++;
             continue;
         }
-        
+
         // Thêm assignment mới
         $insertStmt = $conn->prepare("INSERT INTO tv_media_assignments (tv_id, media_id, is_default, assigned_by, assigned_at) VALUES (?, ?, ?, ?, NOW())");
         $insertStmt->bind_param("iiii", $tvId, $mediaId, $isDefault, $_SESSION['user_id']);
-        
+
         if ($insertStmt->execute()) {
             $assignedCount++;
             $assignedTVs[] = $tv['name'];
-            
-            // Trigger sẽ tự động xử lý is_default và cập nhật tvs.default_content_id
         }
     }
-    
+
     // Ghi log
     if ($assignedCount > 0) {
-        $logStmt = $conn->prepare("INSERT INTO activity_logs (user_id, action, entity_type, entity_id, description, ip_address) VALUES (?, 'assign', 'media', ?, ?, ?)");
         $logDesc = "Gán media '{$media['name']}' cho " . implode(', ', $assignedTVs);
-        $ip = $_SERVER['REMOTE_ADDR'];
-        $logStmt->bind_param("iiss", $_SESSION['user_id'], $mediaId, $logDesc, $ip);
-        $logStmt->execute();
+        logActivity($conn, 'assign', 'media', $mediaId, $logDesc);
     }
-    
+
     // Commit transaction
     $conn->commit();
-    
+
     $message = "Gán thành công cho {$assignedCount} TV";
     if ($skippedCount > 0) {
         $message .= " ({$skippedCount} TV đã được gán trước đó)";
     }
-    
+
     echo json_encode([
         'success' => true,
         'message' => $message,
@@ -132,7 +128,7 @@ try {
         'skipped' => $skippedCount,
         'tvs' => $assignedTVs
     ]);
-    
+
 } catch (Exception $e) {
     $conn->rollback();
     echo json_encode([

@@ -1,6 +1,7 @@
 <?php
 require_once '../includes/auth-check.php';
 require_once '../config/php/config.php';
+require_once '../includes/logger.php';
 
 header('Content-Type: application/json');
 
@@ -51,36 +52,32 @@ try {
     $checkStmt->bind_param("s", $settingKey);
     $checkStmt->execute();
     $checkResult = $checkStmt->get_result();
-    
+
     if ($checkResult->num_rows > 0) {
         // Update existing
         $updateStmt = $conn->prepare("UPDATE system_settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?");
-        $timestampStr = (string)$timestamp;
+        $timestampStr = (string) $timestamp;
         $updateStmt->bind_param("ss", $timestampStr, $settingKey);
         $updateStmt->execute();
     } else {
         // Insert new
         $insertStmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value, setting_type, description) VALUES (?, ?, 'string', ?)");
-        $timestampStr = (string)$timestamp;
+        $timestampStr = (string) $timestamp;
         $description = "Reload signal for TV " . $tv['name'];
         $insertStmt->bind_param("sss", $settingKey, $timestampStr, $description);
         $insertStmt->execute();
     }
-    
-    // Ghi log
-    $logStmt = $conn->prepare("INSERT INTO activity_logs (user_id, action, entity_type, entity_id, description, ip_address) VALUES (?, 'reload', 'tv', ?, ?, ?)");
-    $logDesc = "Ép tải lại TV '{$tv['name']}'";
-    $ip = $_SERVER['REMOTE_ADDR'];
-    $logStmt->bind_param("iiss", $_SESSION['user_id'], $tvId, $logDesc, $ip);
-    $logStmt->execute();
-    
+
+    // Ghi log via Logger
+    logActivity($conn, 'reload', 'tv', $tvId, "Ép tải lại TV '{$tv['name']}'");
+
     echo json_encode([
         'success' => true,
         'message' => 'Đã gửi lệnh tải lại cho TV',
         'tv_name' => $tv['name'],
         'timestamp' => $timestamp
     ]);
-    
+
 } catch (Exception $e) {
     echo json_encode([
         'success' => false,
