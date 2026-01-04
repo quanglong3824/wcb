@@ -1,9 +1,4 @@
 <?php
-/**
- * TV Status Check Cron Job
- * Run this every 5 minutes via cron:
- * */5 * * * * php /path/to/wcb/cron/check-tv-status.php
- */
 
 // Prevent web access
 if (php_sapi_name() !== 'cli' && !defined('CRON_ALLOWED')) {
@@ -31,34 +26,34 @@ $newlyOffline = [];
 
 while ($tv = $result->fetch_assoc()) {
     $isOnline = false;
-    
+
     // Check heartbeat (within 5 minutes)
     if ($tv['last_heartbeat']) {
         $lastHeartbeat = strtotime($tv['last_heartbeat']);
         $isOnline = (time() - $lastHeartbeat) <= 300;
     }
-    
+
     // Optional: Ping IP address if available
     if (!$isOnline && !empty($tv['ip_address'])) {
         $isOnline = pingHost($tv['ip_address']);
     }
-    
+
     // Update status
     $newStatus = $isOnline ? 'online' : 'offline';
-    
+
     if ($tv['status'] !== $newStatus) {
         $updateStmt = $conn->prepare("UPDATE tvs SET status = ? WHERE id = ?");
         $updateStmt->bind_param("si", $newStatus, $tv['id']);
         $updateStmt->execute();
-        
+
         echo "TV {$tv['name']}: {$tv['status']} -> {$newStatus}\n";
-        
+
         // Track newly offline TVs
         if ($newStatus === 'offline') {
             $newlyOffline[] = $tv;
         }
     }
-    
+
     if ($isOnline) {
         $onlineCount++;
     } else {
@@ -86,10 +81,11 @@ echo "[" . date('Y-m-d H:i:s') . "] TV status check completed.\n";
 /**
  * Ping a host to check if it's reachable
  */
-function pingHost($host, $timeout = 1) {
+function pingHost($host, $timeout = 1)
+{
     // Try to ping (works on Linux/Mac)
     $command = sprintf('ping -c 1 -W %d %s 2>&1', $timeout, escapeshellarg($host));
     exec($command, $output, $returnCode);
-    
+
     return $returnCode === 0;
 }

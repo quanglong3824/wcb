@@ -1,6 +1,7 @@
 <?php
 // Authentication check - Must be first
 require_once 'includes/auth-check.php';
+require_once 'config/php/config.php';
 
 // Xác định base path
 $basePath = './';
@@ -36,7 +37,7 @@ include 'includes/sidebar.php';
             <div class="stat-card-value"><i class="fas fa-spinner fa-spin"></i></div>
             <div class="stat-card-label">Tổng số TV</div>
         </div>
-        
+
         <div class="stat-card">
             <div class="stat-card-header">
                 <div class="stat-card-icon">
@@ -46,7 +47,7 @@ include 'includes/sidebar.php';
             <div class="stat-card-value"><i class="fas fa-spinner fa-spin"></i></div>
             <div class="stat-card-label">TV đang Online</div>
         </div>
-        
+
         <div class="stat-card">
             <div class="stat-card-header">
                 <div class="stat-card-icon">
@@ -56,7 +57,7 @@ include 'includes/sidebar.php';
             <div class="stat-card-value"><i class="fas fa-spinner fa-spin"></i></div>
             <div class="stat-card-label">Nội dung WCB</div>
         </div>
-        
+
         <div class="stat-card">
             <div class="stat-card-header">
                 <div class="stat-card-icon">
@@ -73,7 +74,7 @@ include 'includes/sidebar.php';
         <div class="card-header">
             <h2><i class="fas fa-bolt"></i> Thao tác nhanh</h2>
         </div>
-        
+
         <div class="dashboard-grid">
             <div class="stat-card">
                 <h3 class="mb-3"><i class="fas fa-tv text-gold"></i> Quản lý TV</h3>
@@ -100,14 +101,14 @@ include 'includes/sidebar.php';
             </div>
         </div>
     </div>
-    
+
     <!-- Recent Activity -->
     <div class="card">
         <div class="card-header">
             <h2><i class="fas fa-history"></i> Hoạt động gần đây</h2>
             <a href="#" class="btn btn-sm btn-secondary">Xem tất cả</a>
         </div>
-        
+
         <div class="table-container">
             <table>
                 <thead>
@@ -121,7 +122,8 @@ include 'includes/sidebar.php';
                 <tbody id="activityTableBody">
                     <tr>
                         <td colspan="4" style="text-align: center; padding: 40px; color: #999;">
-                            <i class="fas fa-spinner fa-spin" style="font-size: 3em; display: block; margin-bottom: 15px;"></i>
+                            <i class="fas fa-spinner fa-spin"
+                                style="font-size: 3em; display: block; margin-bottom: 15px;"></i>
                             <p>Đang tải dữ liệu...</p>
                         </td>
                     </tr>
@@ -129,13 +131,13 @@ include 'includes/sidebar.php';
             </table>
         </div>
     </div>
-    
+
     <!-- TV Status Overview -->
     <div class="card">
         <div class="card-header">
             <h2><i class="fas fa-tv"></i> Trạng thái TV</h2>
         </div>
-        
+
         <div id="tvStatusGrid" class="tv-status-grid">
             <div style="text-align: center; padding: 40px; color: #999;">
                 <i class="fas fa-spinner fa-spin" style="font-size: 3em;"></i>
