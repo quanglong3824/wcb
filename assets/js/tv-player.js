@@ -22,7 +22,7 @@
         HEARTBEAT_INTERVAL: 5000,    // Send heartbeat every 5 seconds (VERY FAST)
         RELOAD_CHECK_INTERVAL: 2000, // Check for reload signal every 2 seconds (FAST)
         RELOAD_SIGNAL_CHECK: 1000,   // Check system_settings reload signal every 1 second (INSTANT)
-        FADE_DURATION: 800,          // Fade transition duration
+        FADE_DURATION: 1500,          // Fade transition duration
         MAX_CONTENTS: 10,            // Maximum contents to display
         META_REFRESH_SECONDS: 300,   // Meta refresh every 5 minutes (backup)
 
@@ -340,12 +340,33 @@
         state.videoHasEnded = false;
     }
 
-    // Next slide with fade transition
+    // Next slide with premium transition
     function nextSlide() {
         if (state.isTransitioning) return;
+        
+        // Don't transition if there's only 1 item
+        if (state.contentList.length <= 1) return;
+        
         state.isTransitioning = true;
         
-        // Clean up any video loop timer before transition
+        // Clean up video loop timer before transition
+        cleanupVideoTimers();
+        
+        state.videoHasEnded = false;
+        
+        // Prepare next index
+        var nextIndex = (state.currentIndex + 1) % state.contentList.length;
+        var nextContent = state.contentList[nextIndex];
+        
+        // Perform transition
+        performTransition(nextContent, function() {
+            state.currentIndex = nextIndex;
+            state.isTransitioning = false;
+        });
+    }
+
+    // Helper to clean up video timers
+    function cleanupVideoTimers() {
         if (state.videoLoopTimer) {
             clearTimeout(state.videoLoopTimer);
             state.videoLoopTimer = null;
@@ -361,77 +382,79 @@
             countdown.parentNode.removeChild(countdown);
         }
         
-        state.videoHasEnded = false;
-
-        var display = document.getElementById('content-display');
-        if (!display) return;
-
-        // Fade out
-        setOpacity(display, 0);
-
-        // Wait for fade, then change content
-        setTimeout(function () {
-            state.currentIndex = (state.currentIndex + 1) % state.contentList.length;
-            displayContent(state.contentList[state.currentIndex]);
-
-            // Fade in
-            setTimeout(function () {
-                setOpacity(display, 1);
-                state.isTransitioning = false;
-            }, 50);
-        }, CONFIG.FADE_DURATION);
+        // Stop any playing video in current slide to save resources
+        var currentActive = document.querySelector('.slide-item.active video');
+        if (currentActive) {
+            currentActive.pause();
+        }
     }
 
-    // Display content
-    function displayContent(content) {
-        var display = document.getElementById('content-display');
-        if (!display) {
-            console.error('[TV Player] content-display element not found!');
-            return;
-        }
+    // Perform the visual transition
+    function performTransition(content, callback) {
+        var container = document.getElementById('content-display');
+        if (!container) return;
 
-        console.log('[TV Player] Displaying:', content.name, '- Type:', content.type);
+        // Create new slide element
+        var newSlide = createSlideElement(content);
+        container.appendChild(newSlide);
         
-        // Reset video ended flag when displaying new content
-        state.videoHasEnded = false;
+        // Force reflow
+        void newSlide.offsetWidth;
         
-        // Clear any existing countdown
-        if (state.videoLoopTimer) {
-            clearTimeout(state.videoLoopTimer);
-            state.videoLoopTimer = null;
-        }
+        // Activate new slide (fade in)
+        newSlide.classList.add('active');
         
-        if (state.videoLoopCountdownInterval) {
-            clearInterval(state.videoLoopCountdownInterval);
-            state.videoLoopCountdownInterval = null;
-        }
+        // Find old slide
+        var oldSlides = container.querySelectorAll('.slide-item.active');
         
-        var existingCountdown = document.getElementById('loop-countdown');
-        if (existingCountdown && existingCountdown.parentNode) {
-            existingCountdown.parentNode.removeChild(existingCountdown);
-        }
-        
-        // Store current content ID
-        state.currentContentId = content.id;
+        // Wait for transition to complete
+        setTimeout(function() {
+            // Remove old slides
+            for (var i = 0; i < oldSlides.length; i++) {
+                if (oldSlides[i] !== newSlide) {
+                    oldSlides[i].classList.remove('active');
+                    // Give it a moment to fade out if we were doing cross-fade via CSS
+                    // Then remove from DOM
+                    (function(node) {
+                        setTimeout(function() {
+                            if (node && node.parentNode) {
+                                node.parentNode.removeChild(node);
+                            }
+                        }, CONFIG.FADE_DURATION + 100); 
+                    })(oldSlides[i]);
+                }
+            }
+            
+            // Callback done
+            if (callback) callback();
+            
+        }, CONFIG.FADE_DURATION); // Wait for fade duration
+    }
 
-        var html = '';
+    // Create a slide DOM element
+    function createSlideElement(content) {
+        var slide = document.createElement('div');
+        slide.className = 'slide-item';
+        
         var basePath = getBasePath();
         var filePath = content.file_path;
 
-        // Handle file path - add basePath if not absolute
+        // Handle file path
         if (filePath && filePath.indexOf('http') !== 0 && filePath.indexOf('/') !== 0) {
             filePath = basePath + filePath;
         }
 
+        var html = '';
         if (content.type === 'image') {
+            // Add Ken Burns effect class randomly
+            var animations = ['kb-zoom-in', 'kb-zoom-out', 'kb-pan-right', 'kb-pan-left'];
+            var randomAnim = animations[Math.floor(Math.random() * animations.length)];
+            slide.classList.add(randomAnim);
+            
             html = '<img src="' + filePath + '" alt="' + escapeHtml(content.name) + '" ' +
-                'style="width:100%;height:100%;object-fit:cover;" ' +
                 'onerror="this.src=\'' + basePath + 'assets/img/no-image.png\'">';
         } else if (content.type === 'video') {
-            // Enhanced video tag for old TizenOS/Samsung TV compatibility
-            // REMOVE loop attribute - we handle it manually with 30s delay
             html = '<video ' +
-                'style="width:100%;height:100%;object-fit:cover;background:#000;" ' +
                 'autoplay muted playsinline ' +
                 'preload="auto" ' +
                 'webkit-playsinline ' +
@@ -442,193 +465,149 @@
                 'Your browser does not support the video tag.' +
                 '</video>';
         }
+        
+        slide.innerHTML = html;
+        
+        // Setup video specific listeners if it's a video
+        if (content.type === 'video') {
+           setupVideoElement(slide.querySelector('video'), filePath);
+        }
+        
+        return slide;
+    }
 
-        // Remove mode-contain class to show full screen
+    // Display initial content
+    function displayContent(content) {
+        var display = document.getElementById('content-display');
+        if (!display) return;
+
+        console.log('[TV Player] Displaying initial:', content.name);
+        
+        // Reset state
+        state.videoHasEnded = false;
+        cleanupVideoTimers();
+        state.currentContentId = content.id;
+        
+        // Clear container first for initial load
+        display.innerHTML = '';
         display.classList.remove('mode-contain');
-        display.innerHTML = html;
+        
+        // Create and append slide
+        var slide = createSlideElement(content);
+        slide.classList.add('active'); // Instant show for first item
+        display.appendChild(slide);
+    }
+    
+    // Video setup helper with robust handling
+    function setupVideoElement(video, filePath) {
+        if (!video) return;
 
-        // For video, ensure it plays with enhanced error handling
-        var video = display.querySelector('video');
-        if (video) {
-            // Add loading state
-            console.log('[TV Player] Loading video:', filePath);
-            
-            // Event listeners for debugging
-            video.addEventListener('loadstart', function() {
-                console.log('[TV Player] Video loadstart');
-            });
-            
-            video.addEventListener('loadedmetadata', function() {
-                console.log('[TV Player] Video metadata loaded, duration:', video.duration);
-            });
-            
-            video.addEventListener('loadeddata', function() {
-                console.log('[TV Player] Video data loaded');
-            });
-            
-            video.addEventListener('canplay', function() {
-                console.log('[TV Player] Video can play');
-            });
-            
-            video.addEventListener('canplaythrough', function() {
-                console.log('[TV Player] Video can play through');
-            });
-            
-            video.addEventListener('playing', function() {
-                console.log('[TV Player] Video is playing');
-            });
-            
-            video.addEventListener('error', function(e) {
-                var errorMsg = 'Unknown error';
-                if (video.error) {
-                    switch (video.error.code) {
-                        case 1: errorMsg = 'MEDIA_ERR_ABORTED'; break;
-                        case 2: errorMsg = 'MEDIA_ERR_NETWORK'; break;
-                        case 3: errorMsg = 'MEDIA_ERR_DECODE'; break;
-                        case 4: errorMsg = 'MEDIA_ERR_SRC_NOT_SUPPORTED'; break;
-                    }
+        console.log('[TV Player] Loading video:', filePath);
+        
+        // Event listeners for debugging
+        video.addEventListener('loadstart', function() {
+            console.log('[TV Player] Video loadstart');
+        });
+        
+        video.addEventListener('loadedmetadata', function() {
+            console.log('[TV Player] Video metadata loaded, duration:', video.duration);
+        });
+        
+        video.addEventListener('error', function(e) {
+            var errorMsg = 'Unknown error';
+            if (video.error) {
+                switch (video.error.code) {
+                    case 1: errorMsg = 'MEDIA_ERR_ABORTED'; break;
+                    case 2: errorMsg = 'MEDIA_ERR_NETWORK'; break;
+                    case 3: errorMsg = 'MEDIA_ERR_DECODE'; break;
+                    case 4: errorMsg = 'MEDIA_ERR_SRC_NOT_SUPPORTED'; break;
                 }
-                console.error('[TV Player] Video error:', errorMsg, video.error);
-                
-                // Show error message after 3 seconds
-                setTimeout(function() {
-                    showNoContent('Không thể phát video: ' + errorMsg);
-                }, 3000);
-            });
-            
-            video.addEventListener('stalled', function() {
-                console.warn('[TV Player] Video stalled');
-            });
-            
-            video.addEventListener('waiting', function() {
-                console.log('[TV Player] Video waiting for data');
-            });
-            
-            // Handle video end - SIMPLIFIED
-            // We use Simple Auto Page Reload (fixed timer) instead of relying on video events
-            // This works reliably on old TVs where 'ended' event may not fire correctly
-            video.addEventListener('ended', function() {
-                state.videoHasEnded = true;
-                console.log('[TV Player] Video ended at', video.currentTime.toFixed(2), '/', video.duration.toFixed(2));
-                console.log('[TV Player] Page will auto-reload in remaining time. No action needed.');
-                
-                // Just show a simple message - page will reload via Simple Auto Page Reload timer
-                // No need to manually restart video or set timers
-            });
-            
-            // Handle video pause - ONLY resume if stuck mid-play (not at end)
-            video.addEventListener('pause', function() {
-                // If video paused near the end, let it be (page will reload)
-                if (video.duration > 0 && video.currentTime >= video.duration - 2) {
-                    console.log('[TV Player] Video paused at end - page will auto-reload');
-                    return;
-                }
-                
-                // If paused mid-play and not transitioning, try to resume
-                if (!state.isTransitioning && video.currentTime < video.duration - 2) {
-                    console.log('[TV Player] Video paused mid-play, resuming...');
-                    setTimeout(function() {
-                        video.play().catch(function(e) {
-                            console.log('[TV Player] Resume failed:', e);
-                        });
-                    }, 100);
-                }
-            });
-            
-            // Handle video suspend - try to resume if mid-play
-            video.addEventListener('suspend', function() {
-                if (video.duration > 0 && video.currentTime >= video.duration - 2) {
-                    console.log('[TV Player] Video suspended at end - page will auto-reload');
-                    return;
-                }
-                
-                console.warn('[TV Player] Video suspended mid-play, attempting to resume...');
-                setTimeout(function() {
-                    if (video.paused && !state.isTransitioning) {
-                        video.play().catch(function(e) {
-                            console.log('[TV Player] Resume after suspend failed:', e);
-                        });
-                    }
-                }, 500);
-            });
-            
-            // Simplified watchdog: Only restart if video is stuck mid-play
-            if (state.videoWatchdogTimer) {
-                clearInterval(state.videoWatchdogTimer);
             }
-            
-            var lastCheckedTime = 0;
-            var stuckCount = 0;
-            
-            state.videoWatchdogTimer = setInterval(function() {
-                if (!video || state.isTransitioning) return;
-                
-                // Skip if video is near the end (let page reload handle it)
-                if (video.duration > 0 && video.currentTime >= video.duration - 2) {
-                    return;
+            console.error('[TV Player] Video error:', errorMsg, video.error);
+            showNoContent('Không thể phát video: ' + errorMsg);
+        });
+        
+        // Handle video end
+        video.addEventListener('ended', function() {
+            state.videoHasEnded = true;
+            console.log('[TV Player] Video ended.');
+            // Note: Simple Auto Page Reload handles the actual reload/loop logic if needed
+        });
+        
+        // Handle video pause - Resume if not at end
+        video.addEventListener('pause', function() {
+            if (video.duration > 0 && video.currentTime >= video.duration - 2) {
+                return;
+            }
+            if (!state.isTransitioning && video.currentTime < video.duration - 2) {
+                console.log('[TV Player] Video paused mid-play, resuming...');
+                setTimeout(function() {
+                    video.play().catch(function(e) { console.log('Resume failed:', e); });
+                }, 100);
+            }
+        });
+        
+        // Handle suspend
+        video.addEventListener('suspend', function() {
+            if (video.duration > 0 && video.currentTime >= video.duration - 2) return;
+            console.warn('[TV Player] Video suspended mid-play, attempting to resume...');
+            setTimeout(function() {
+                if (video.paused && !state.isTransitioning) {
+                    video.play().catch(function(e) {});
                 }
-                
-                // Check if video is stuck (not progressing)
-                if (video.currentTime === lastCheckedTime && !video.paused) {
-                    stuckCount++;
-                    if (stuckCount >= 3) {
-                        console.warn('[TV Player] Video stuck mid-play, forcing resume...');
-                        video.play().catch(function(e) {
-                            console.error('[TV Player] Force play failed:', e);
-                        });
-                        stuckCount = 0;
-                    }
-                } else {
+            }, 500);
+        });
+        
+        // Watchdog for stuck video
+        if (state.videoWatchdogTimer) clearInterval(state.videoWatchdogTimer);
+        
+        var lastCheckedTime = 0;
+        var stuckCount = 0;
+        
+        state.videoWatchdogTimer = setInterval(function() {
+            if (!video || state.isTransitioning) return;
+            if (video.duration > 0 && video.currentTime >= video.duration - 2) return;
+            
+            if (video.currentTime === lastCheckedTime && !video.paused) {
+                stuckCount++;
+                if (stuckCount >= 3) {
+                    console.warn('[TV Player] Video stuck, forcing resume...');
+                    video.play().catch(function(e) {});
                     stuckCount = 0;
                 }
-                
-                lastCheckedTime = video.currentTime;
-            }, 3000);
-            
-            // Force load and play
-            video.load();
-            
-            // REMOVE loop attribute - we handle loop manually with 30s delay
-            video.loop = false;
-            video.removeAttribute('loop');
-            
-            // Try to play with multiple attempts for old browsers
-            var playAttempts = 0;
-            var maxAttempts = 3;
-            
-            function attemptPlay() {
-                playAttempts++;
-                console.log('[TV Player] Play attempt', playAttempts);
-                
-                var playPromise = video.play();
-                
-                if (playPromise !== undefined) {
-                    playPromise.then(function() {
-                        console.log('[TV Player] Video playing successfully');
-                    }).catch(function(e) {
-                        console.log('[TV Player] Play attempt ' + playAttempts + ' failed:', e);
-                        
-                        if (playAttempts < maxAttempts) {
-                            setTimeout(attemptPlay, 1000);
-                        } else {
-                            console.error('[TV Player] All play attempts failed');
-                        }
-                    });
-                } else {
-                    // Old browsers that don't return a promise
-                    console.log('[TV Player] Video play initiated (no promise support)');
-                }
+            } else {
+                stuckCount = 0;
             }
-            
-            // Start first play attempt after a short delay
-            setTimeout(attemptPlay, 500);
-            
-            // Store video element reference
-            state.currentVideoElement = video;
-            
-            // Start video progress reporter (send progress every 5 seconds)
-            startVideoProgressReporter();
+            lastCheckedTime = video.currentTime;
+        }, 3000);
+        
+        // Force load and play
+        video.load();
+        video.loop = false;
+        
+        // Robust play attempt
+        var playAttempts = 0;
+        var maxAttempts = 3;
+        
+        function attemptPlay() {
+            playAttempts++;
+            var playPromise = video.play();
+            if (playPromise !== undefined) {
+                playPromise.then(function() {
+                    console.log('[TV Player] Video playing successfully');
+                }).catch(function(e) {
+                    console.log('[TV Player] Play attempt ' + playAttempts + ' failed:', e);
+                    if (playAttempts < maxAttempts) {
+                        setTimeout(attemptPlay, 1000);
+                    }
+                });
+            }
         }
+        
+        setTimeout(attemptPlay, 500);
+        
+        state.currentVideoElement = video;
+        startVideoProgressReporter();
     }
 
     // Show no content message - Display logo instead of error

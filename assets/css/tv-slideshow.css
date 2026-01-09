@@ -1,0 +1,127 @@
+/* Premium TV Slideshow Transitions */
+
+/* Container for slides */
+#content-display {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #000;
+}
+
+/* Individual Slide Item */
+.slide-item {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  z-index: 1;
+  transition: opacity 1.5s ease-in-out;
+  visibility: hidden; /* Hide completely when not active */
+}
+
+.slide-item.active {
+  opacity: 1;
+  z-index: 2;
+  visibility: visible;
+}
+
+.slide-item.previous {
+  z-index: 1;
+  opacity: 0;
+}
+
+/* Image styling within slide */
+.slide-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  /* Default state for Ken Burns */
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.slide-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  background: #000;
+}
+
+/* Ken Burns Animations */
+/* Gentle Zoom In */
+@keyframes ken-burns-in {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.15);
+  }
+}
+
+/* Gentle Zoom Out */
+@keyframes ken-burns-out {
+  0% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Pan Right + Zoom */
+@keyframes ken-burns-pan-right {
+  0% {
+    transform: scale(1.1) translate(-2%, 0);
+  }
+  100% {
+    transform: scale(1.1) translate(2%, 0);
+  }
+}
+
+/* Pan Left + Zoom */
+@keyframes ken-burns-pan-left {
+  0% {
+    transform: scale(1.1) translate(2%, 0);
+  }
+  100% {
+    transform: scale(1.1) translate(-2%, 0);
+  }
+}
+
+/* Apply animation classes */
+.kb-zoom-in img {
+  animation: ken-burns-in 20s ease-out forwards;
+}
+
+.kb-zoom-out img {
+  animation: ken-burns-out 20s ease-out forwards;
+}
+
+.kb-pan-right img {
+  animation: ken-burns-pan-right 20s linear alternate infinite;
+}
+
+.kb-pan-left img {
+  animation: ken-burns-pan-left 20s linear alternate infinite;
+}
+
+/* Loading/No Content Styling */
+.no-content-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #111;
+  color: #fff;
+  z-index: 0;
+}

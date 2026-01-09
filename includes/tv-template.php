@@ -24,7 +24,7 @@ $tvConfig = isset($tvConfig) ? $tvConfig : [
 // Get TV info from database if possible
 if (file_exists(dirname(__DIR__) . '/config/php/config.php')) {
     require_once dirname(__DIR__) . '/config/php/config.php';
-    
+
     $conn = getDBConnection();
     if ($conn) {
         // Try to get TV by folder name
@@ -32,20 +32,21 @@ if (file_exists(dirname(__DIR__) . '/config/php/config.php')) {
         $stmt->bind_param("s", $tvConfig['folder']);
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         if ($result->num_rows > 0) {
             $tv = $result->fetch_assoc();
             $tvConfig['id'] = $tv['id'];
             $tvConfig['name'] = $tv['name'];
             $tvConfig['location'] = $tv['location'];
         }
-        
+
         $conn->close();
     }
 }
 ?>
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -54,6 +55,7 @@ if (file_exists(dirname(__DIR__) . '/config/php/config.php')) {
     <meta http-equiv="refresh" content="600">
     <title><?php echo htmlspecialchars($tvConfig['name']); ?> - Welcome Board</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/tv-slideshow.css">
     <style>
         /* Reset - Compatible with older browsers */
         * {
@@ -63,19 +65,20 @@ if (file_exists(dirname(__DIR__) . '/config/php/config.php')) {
             -moz-box-sizing: border-box;
             box-sizing: border-box;
         }
-        
-        html, body {
+
+        html,
+        body {
             width: 100%;
             height: 100%;
             overflow: hidden;
             background: #000;
         }
-        
+
         body {
             font-family: Arial, Helvetica, sans-serif;
             color: #fff;
         }
-        
+
         /* TV Display Container */
         #tv-display {
             width: 100%;
@@ -97,7 +100,7 @@ if (file_exists(dirname(__DIR__) . '/config/php/config.php')) {
             justify-content: center;
             position: relative;
         }
-        
+
         /* Content Display */
         #content-display {
             width: 100%;
@@ -122,7 +125,7 @@ if (file_exists(dirname(__DIR__) . '/config/php/config.php')) {
             -o-transition: opacity 0.8s ease;
             transition: opacity 0.8s ease;
         }
-        
+
         #content-display img,
         #content-display video {
             width: 100%;
@@ -131,7 +134,7 @@ if (file_exists(dirname(__DIR__) . '/config/php/config.php')) {
             object-fit: cover;
             display: block;
         }
-        
+
         /* Mode: contain (giữ tỷ lệ) hoặc cover (full màn hình) */
         #content-display.mode-contain img,
         #content-display.mode-contain video {
@@ -142,7 +145,7 @@ if (file_exists(dirname(__DIR__) . '/config/php/config.php')) {
             -o-object-fit: contain;
             object-fit: contain;
         }
-        
+
         /* TV Info Overlay - Ẩn mặc định, hiện khi hover */
         .tv-info {
             position: fixed;
@@ -156,28 +159,28 @@ if (file_exists(dirname(__DIR__) . '/config/php/config.php')) {
             -webkit-transition: opacity 0.3s;
             transition: opacity 0.3s;
         }
-        
+
         body:hover .tv-info {
             opacity: 0.8;
         }
-        
+
         .tv-info:hover {
             opacity: 1 !important;
         }
-        
+
         .tv-info h2 {
             margin: 0 0 3px 0;
             font-size: 0.9em;
             color: #d4af37;
             font-weight: 600;
         }
-        
+
         .tv-info p {
             margin: 0;
             opacity: 0.7;
             font-size: 0.75em;
         }
-        
+
         /* Fullscreen Button - Ẩn mặc định, hiện khi hover */
         .fullscreen-btn {
             position: fixed;
@@ -197,11 +200,11 @@ if (file_exists(dirname(__DIR__) . '/config/php/config.php')) {
             transition: all 0.3s;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
-        
+
         body:hover .fullscreen-btn {
             opacity: 1;
         }
-        
+
         .fullscreen-btn:hover {
             background: rgba(212, 175, 55, 1);
             -webkit-transform: scale(1.1);
@@ -209,25 +212,25 @@ if (file_exists(dirname(__DIR__) . '/config/php/config.php')) {
             -ms-transform: scale(1.1);
             transform: scale(1.1);
         }
-        
+
         /* No Content State */
         .no-content {
             text-align: center;
             padding: 40px;
         }
-        
+
         .no-content i {
             font-size: 5em;
             color: #666;
             margin-bottom: 20px;
             display: block;
         }
-        
+
         .no-content p {
             font-size: 1.5em;
             color: #999;
         }
-        
+
         /* Status Indicator */
         .status-indicator {
             position: fixed;
@@ -241,50 +244,66 @@ if (file_exists(dirname(__DIR__) . '/config/php/config.php')) {
             -webkit-animation: pulse 2s infinite;
             animation: pulse 2s infinite;
         }
-        
+
         .status-indicator.offline {
             background: #e74c3c;
         }
-        
+
         @-webkit-keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
         }
-        
+
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
         }
     </style>
 </head>
+
 <body>
     <!-- TV Info -->
     <div class="tv-info">
         <h2><i class="fas fa-tv"></i> <?php echo htmlspecialchars($tvConfig['name']); ?></h2>
         <p><?php echo htmlspecialchars($tvConfig['location']); ?></p>
     </div>
-    
+
     <!-- Status Indicator -->
     <div class="status-indicator" id="statusIndicator"></div>
-    
+
     <!-- Main Display -->
     <div id="tv-display">
         <div id="content-display">
-            <div class="no-content" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;">
-                <img src="../assets/img/logo-dark-ui.png" alt="Logo" 
-                     style="max-width:350px;max-height:250px;object-fit:contain;margin-bottom:20px;"
-                     onerror="this.style.display='none';">
+            <div class="no-content"
+                style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;">
+                <img src="../assets/img/logo-dark-ui.png" alt="Logo"
+                    style="max-width:350px;max-height:250px;object-fit:contain;margin-bottom:20px;"
+                    onerror="this.style.display='none';">
                 <i class="fas fa-spinner fa-spin" style="font-size:2em;color:#d4af37;margin-bottom:15px;"></i>
                 <p style="color:#888;">Đang tải nội dung...</p>
             </div>
         </div>
     </div>
-    
+
     <!-- Fullscreen Button -->
     <button class="fullscreen-btn" onclick="toggleFullscreen()" title="Toàn màn hình">
         <i class="fas fa-expand"></i>
     </button>
-    
+
     <!-- TV Configuration -->
     <script>
         // TV Configuration - passed to player
@@ -292,8 +311,9 @@ if (file_exists(dirname(__DIR__) . '/config/php/config.php')) {
         var TV_FOLDER = '<?php echo addslashes($tvConfig['folder']); ?>';
         var TV_NAME = '<?php echo addslashes($tvConfig['name']); ?>';
     </script>
-    
+
     <!-- TV Player Script -->
     <script src="../assets/js/tv-player.js"></script>
 </body>
+
 </html>
