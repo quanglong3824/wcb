@@ -44,6 +44,13 @@
   will-change: transform;
 }
 
+/* Static display for single image (1/1) */
+.slide-item.static-display img {
+  transform: scale(0.95);
+  object-fit: contain; /* Ensure full image is visible */
+  animation: none !important;
+}
+
 .slide-item video {
   width: 100%;
   height: 100%;

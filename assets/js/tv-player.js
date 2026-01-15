@@ -446,10 +446,16 @@
 
         var html = '';
         if (content.type === 'image') {
-            // Add Ken Burns effect class randomly
-            var animations = ['kb-zoom-in', 'kb-zoom-out', 'kb-pan-right', 'kb-pan-left'];
-            var randomAnim = animations[Math.floor(Math.random() * animations.length)];
-            slide.classList.add(randomAnim);
+            // Only apply Ken Burns if > 1 image. If 1/1, use specific static scaling.
+            if (state.contentList && state.contentList.length > 1) {
+                // Add Ken Burns effect class randomly
+                var animations = ['kb-zoom-in', 'kb-zoom-out', 'kb-pan-right', 'kb-pan-left'];
+                var randomAnim = animations[Math.floor(Math.random() * animations.length)];
+                slide.classList.add(randomAnim);
+            } else {
+                // Static display for single image (1/1)
+                slide.classList.add('static-display');
+            }
             
             html = '<img src="' + filePath + '" alt="' + escapeHtml(content.name) + '" ' +
                 'onerror="this.src=\'' + basePath + 'assets/img/no-image.png\'">';
