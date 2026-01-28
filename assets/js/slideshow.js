@@ -361,9 +361,12 @@ async function openImageSelector() {
     
     modal.classList.add('active');
     
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+    
     try {
-        // Load images from media library
-        const response = await fetch('api/media.php?action=list&type=image');
+        // Load images from media library - sửa endpoint
+        const response = await fetch('api/media.php?type=image&status=active&limit=100');
         const data = await response.json();
         
         if (!data.success) {
@@ -457,6 +460,8 @@ function confirmImageSelection() {
  */
 function closeImageSelector() {
     document.getElementById('imageSelectorModal').classList.remove('active');
+    // Restore body scroll
+    document.body.style.overflow = '';
 }
 
 /**
@@ -622,6 +627,8 @@ function assignToTV(slideshowId) {
  */
 function openModal() {
     document.getElementById('slideshowModal').classList.add('active');
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
 }
 
 /**
@@ -629,6 +636,8 @@ function openModal() {
  */
 function closeModal() {
     document.getElementById('slideshowModal').classList.remove('active');
+    // Restore body scroll
+    document.body.style.overflow = '';
 }
 
 /**
