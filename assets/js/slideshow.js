@@ -8,6 +8,7 @@ let selectedImages = [];
 let selectedAudio = null;
 let editingSlideshowId = null;
 let allImages = [];
+let lastSelectedId = null; // Track last interaction for shift-click
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
@@ -390,7 +391,7 @@ async function openImageSelector() {
             return `
                 <div class="library-image-item ${isSelected ? 'selected' : ''}" 
                      data-id="${img.id}" 
-                     onclick="toggleImageSelection(${img.id})">
+                     onclick="toggleImageSelection(${img.id}, event)">
                     <img src="${img.file_path}" alt="${escapeHtml(img.name)}">
                     <div class="check-icon">
                         <i class="fas fa-check"></i>
@@ -413,28 +414,61 @@ async function openImageSelector() {
 }
 
 /**
- * Toggle image selection
+ * Toggle image selection with Shift Click support
  */
-function toggleImageSelection(imageId) {
-    const item = document.querySelector(`.library-image-item[data-id="${imageId}"]`);
-    const index = selectedImages.findIndex(img => img.id === imageId);
-    
-    if (index > -1) {
-        // Deselect
-        selectedImages.splice(index, 1);
-        item.classList.remove('selected');
+function toggleImageSelection(imageId, event) {
+    // Check if shift key is pressed and we have a last selected id
+    if (event && event.shiftKey && lastSelectedId !== null && lastSelectedId !== imageId) {
+        const currentIndex = allImages.findIndex(img => img.id === imageId);
+        const lastIndex = allImages.findIndex(img => img.id === lastSelectedId);
+        
+        if (currentIndex !== -1 && lastIndex !== -1) {
+            const start = Math.min(currentIndex, lastIndex);
+            const end = Math.max(currentIndex, lastIndex);
+            
+            // Loop through range
+            for (let i = start; i <= end; i++) {
+                const img = allImages[i];
+                const isSelected = selectedImages.some(si => si.id === img.id);
+                
+                // Select if not already selected
+                if (!isSelected) {
+                    selectedImages.push({
+                        id: img.id,
+                        name: img.name,
+                        file_path: img.file_path
+                    });
+                    
+                    const item = document.querySelector(`.library-image-item[data-id="${img.id}"]`);
+                    if (item) item.classList.add('selected');
+                }
+            }
+        }
     } else {
-        // Select
-        const image = allImages.find(img => img.id === imageId);
-        if (image) {
-            selectedImages.push({
-                id: image.id,
-                name: image.name,
-                file_path: image.file_path
-            });
-            item.classList.add('selected');
+        // Normal click behavior
+        const item = document.querySelector(`.library-image-item[data-id="${imageId}"]`);
+        const index = selectedImages.findIndex(img => img.id === imageId);
+        
+        if (index > -1) {
+            // Deselect
+            selectedImages.splice(index, 1);
+            item.classList.remove('selected');
+        } else {
+            // Select
+            const image = allImages.find(img => img.id === imageId);
+            if (image) {
+                selectedImages.push({
+                    id: image.id,
+                    name: image.name,
+                    file_path: image.file_path
+                });
+                item.classList.add('selected');
+            }
         }
     }
+    
+    // Update last selected id
+    lastSelectedId = imageId;
     
     updateSelectedImageCount();
 }
