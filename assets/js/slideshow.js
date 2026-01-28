@@ -177,6 +177,7 @@ async function editSlideshow(id) {
             showSelectedAudio();
         } else {
             selectedAudio = null;
+            document.getElementById('audioId').value = '';
             document.getElementById('selectedAudio').style.display = 'none';
             document.getElementById('audioUploadArea').style.display = 'block';
         }

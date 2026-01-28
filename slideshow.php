@@ -101,7 +101,7 @@ include 'includes/sidebar.php';
 
                     <!-- Audio Selection -->
                     <div class="form-group">
-                        <label>Nhạc nền</label>
+                        <label>Nhạc nền (Tùy chọn)</label>
                         <div class="audio-upload-section">
                             <div class="upload-area" id="audioUploadArea">
                                 <i class="fas fa-music"></i>
