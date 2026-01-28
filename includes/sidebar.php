@@ -46,6 +46,13 @@ $menuItems = [
         'active' => ($currentPage == 'uploads.php'),
         'module' => 'upload'
     ],
+    [
+        'icon' => 'fas fa-images',
+        'label' => 'Slideshow',
+        'url' => $basePath . 'slideshow.php',
+        'active' => ($currentPage == 'slideshow.php'),
+        'module' => 'slideshow'
+    ],
     // [
     //     'icon' => 'fas fa-calendar-alt',
     //     'label' => 'Lịch chiếu',
@@ -102,18 +109,18 @@ $adminMenuItems = [
             </div>
         </div>
     </div>
-    
+
     <?php $isSuperAdmin = (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'super_admin'); ?>
     <nav class="sidebar-nav">
         <div class="nav-section">
             <div class="nav-section-title">Main Menu</div>
-            <?php foreach ($menuItems as $item): 
+            <?php foreach ($menuItems as $item):
                 $perms = getModulePermissionIcons($item['module']);
                 $isReadonly = isReadOnly($item['module']);
-            ?>
-                <a href="<?php echo htmlspecialchars($item['url']); ?>" 
-                   class="nav-item <?php echo $item['active'] ? 'active' : ''; ?>"
-                   title="<?php echo !$isSuperAdmin ? $perms['title'] : ''; ?>">
+                ?>
+                <a href="<?php echo htmlspecialchars($item['url']); ?>"
+                    class="nav-item <?php echo $item['active'] ? 'active' : ''; ?>"
+                    title="<?php echo !$isSuperAdmin ? $perms['title'] : ''; ?>">
                     <i class="<?php echo htmlspecialchars($item['icon']); ?>"></i>
                     <span><?php echo htmlspecialchars($item['label']); ?></span>
                     <?php if (!$isSuperAdmin && $isReadonly): ?>
@@ -122,16 +129,16 @@ $adminMenuItems = [
                 </a>
             <?php endforeach; ?>
         </div>
-        
+
         <div class="nav-section">
             <div class="nav-section-title">Administration</div>
-            <?php foreach ($adminMenuItems as $item): 
+            <?php foreach ($adminMenuItems as $item):
                 $perms = getModulePermissionIcons($item['module']);
                 $isReadonly = isReadOnly($item['module']);
-            ?>
-                <a href="<?php echo htmlspecialchars($item['url']); ?>" 
-                   class="nav-item <?php echo $item['active'] ? 'active' : ''; ?>"
-                   title="<?php echo !$isSuperAdmin ? $perms['title'] : ''; ?>">
+                ?>
+                <a href="<?php echo htmlspecialchars($item['url']); ?>"
+                    class="nav-item <?php echo $item['active'] ? 'active' : ''; ?>"
+                    title="<?php echo !$isSuperAdmin ? $perms['title'] : ''; ?>">
                     <i class="<?php echo htmlspecialchars($item['icon']); ?>"></i>
                     <span><?php echo htmlspecialchars($item['label']); ?></span>
                     <?php if (!$isSuperAdmin && $isReadonly): ?>
@@ -140,10 +147,11 @@ $adminMenuItems = [
                 </a>
             <?php endforeach; ?>
         </div>
-        
+
         <div class="nav-section">
             <div class="nav-section-title">Account</div>
-            <a href="<?php echo $basePath; ?>profile.php" class="nav-item <?php echo ($currentPage == 'profile.php') ? 'active' : ''; ?>">
+            <a href="<?php echo $basePath; ?>profile.php"
+                class="nav-item <?php echo ($currentPage == 'profile.php') ? 'active' : ''; ?>">
                 <i class="fas fa-user"></i>
                 <span>Profile</span>
             </a>
