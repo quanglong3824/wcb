@@ -390,7 +390,7 @@ async function openImageSelector() {
         grid.innerHTML = allImages.map(img => {
             const isSelected = selectedImages.some(si => si.id === img.id);
             return `
-                <div class="library-image-item ${isSelected ? 'selected' : ''}" 
+                <div id="library-image-${img.id}" class="library-image-item ${isSelected ? 'selected' : ''}" 
                      data-id="${img.id}" 
                      onclick="toggleImageSelection(${img.id}, event)">
                     <img src="${img.file_path}" alt="${escapeHtml(img.name)}">
@@ -440,14 +440,14 @@ function toggleImageSelection(imageId, event) {
                         file_path: img.file_path
                     });
                     
-                    const item = document.querySelector(`.library-image-item[data-id="${img.id}"]`);
+                    const item = document.getElementById(`library-image-${img.id}`);
                     if (item) item.classList.add('selected');
                 }
             }
         }
     } else {
         // Normal click behavior
-        const item = document.querySelector(`.library-image-item[data-id="${imageId}"]`);
+        const item = document.getElementById(`library-image-${imageId}`);
         const index = selectedImages.findIndex(img => img.id === imageId);
         
         if (index > -1) {
