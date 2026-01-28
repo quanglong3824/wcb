@@ -9,7 +9,7 @@
     --slideshow-dark: #8b7220;
 }
 
-.slide show-container {
+.slideshow-container {
     padding: 0;
     max-width: 100%;
 }
@@ -434,7 +434,7 @@
 
 .selected-audio {
     display: flex;
-    justify-content: between;
+    justify-content: space-between;
     align-items: center;
     padding: 1rem;
     background: rgba(212, 175, 55, 0.1);
