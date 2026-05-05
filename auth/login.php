@@ -31,7 +31,7 @@ if (!file_exists($lockFile)) {
 }
 
 // Nếu đã đăng nhập, redirect về trang chủ
-if (isset($_SESSION['user_id'])) {
+if (isset($_SESSION['user_id']) && isset($_SESSION['username'])) {
     header('Location: ../index.php');
     exit;
 }
