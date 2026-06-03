@@ -15,10 +15,21 @@ ob_clean();
 
 header('Content-Type: application/json');
 
+// Helper function to clean buffer and send JSON
+function sendJSONResponse($data) {
+    if (ob_get_level() > 0) {
+        ob_clean();
+    }
+    echo json_encode($data);
+    if (ob_get_level() > 0) {
+        ob_end_flush();
+    }
+    exit;
+}
+
 // Kiểm tra file upload
 if (!isset($_FILES['file'])) {
-    echo json_encode(['success' => false, 'message' => 'Không có file được upload']);
-    exit;
+    sendJSONResponse(['success' => false, 'message' => 'Không có file được upload']);
 }
 
 $file = $_FILES['file'];
@@ -27,8 +38,7 @@ $fileDescription = isset($_POST['fileDescription']) ? trim($_POST['fileDescripti
 
 // Validate file error
 if ($file['error'] !== UPLOAD_ERR_OK) {
-    echo json_encode(['success' => false, 'message' => 'Lỗi upload file: ' . $file['error']]);
-    exit;
+    sendJSONResponse(['success' => false, 'message' => 'Lỗi upload file: ' . $file['error']]);
 }
 
 
@@ -43,14 +53,12 @@ if (strpos($mimeType, 'image/') === 0) {
     $fileType = 'video';
     $allowedTypes = ['video/mp4', 'video/webm', 'video/avi', 'video/mov', 'video/quicktime'];
 } else {
-    echo json_encode(['success' => false, 'message' => 'Định dạng file không được hỗ trợ']);
-    exit;
+    sendJSONResponse(['success' => false, 'message' => 'Định dạng file không được hỗ trợ']);
 }
 
 // Validate file type
 if (!in_array($mimeType, $allowedTypes)) {
-    echo json_encode(['success' => false, 'message' => 'Định dạng file không được hỗ trợ: ' . $mimeType]);
-    exit;
+    sendJSONResponse(['success' => false, 'message' => 'Định dạng file không được hỗ trợ: ' . $mimeType]);
 }
 
 // Generate unique filename
@@ -66,8 +74,7 @@ if (!file_exists(UPLOAD_PATH)) {
 
 // Move uploaded file
 if (!move_uploaded_file($file['tmp_name'], $uploadPath)) {
-    echo json_encode(['success' => false, 'message' => 'Lỗi khi lưu file']);
-    exit;
+    sendJSONResponse(['success' => false, 'message' => 'Lỗi khi lưu file']);
 }
 
 // Get image dimensions if image
@@ -92,8 +99,7 @@ $conn = getDBConnection();
 if (!$conn) {
     // Delete uploaded file if database connection fails
     unlink($uploadPath);
-    echo json_encode(['success' => false, 'message' => 'Không thể kết nối database']);
-    exit;
+    sendJSONResponse(['success' => false, 'message' => 'Không thể kết nối database']);
 }
 
 $stmt = $conn->prepare("INSERT INTO media (name, type, file_name, file_path, file_size, mime_type, width, height, description, status, uploaded_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, NOW())");
@@ -124,13 +130,17 @@ if ($stmt->execute()) {
             $updateThumb = $conn->prepare("UPDATE media SET thumbnail_path = ? WHERE id = ?");
             $updateThumb->bind_param("si", $thumbnailPath, $mediaId);
             $updateThumb->execute();
+            $updateThumb->close();
         }
     }
 
     // Ghi log
     logActivity($conn, 'upload', 'media', $mediaId, "Upload file: " . $fileName);
 
-    echo json_encode([
+    $stmt->close();
+    $conn->close();
+
+    sendJSONResponse([
         'success' => true,
         'message' => 'Upload thành công',
         'media' => [
@@ -149,11 +159,10 @@ if ($stmt->execute()) {
 } else {
     // Delete uploaded file if database insert fails
     unlink($uploadPath);
-    echo json_encode(['success' => false, 'message' => 'Lỗi khi lưu thông tin vào database: ' . $conn->error]);
+    $stmt->close();
+    $conn->close();
+    sendJSONResponse(['success' => false, 'message' => 'Lỗi khi lưu thông tin vào database: ' . $conn->error]);
 }
-
-$stmt->close();
-$conn->close();
 
 /**
  * Generate video thumbnail using FFmpeg

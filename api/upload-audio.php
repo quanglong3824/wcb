@@ -13,6 +13,18 @@ ob_clean();
 
 header('Content-Type: application/json');
 
+// Helper function to clean buffer and send JSON
+function sendJSONResponse($data) {
+    if (ob_get_level() > 0) {
+        ob_clean();
+    }
+    echo json_encode($data);
+    if (ob_get_level() > 0) {
+        ob_end_flush();
+    }
+    exit;
+}
+
 // Cấu hình upload
 $upload_dir = '../uploads/';
 $allowed_audio_types = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a', 'audio/aac'];
@@ -105,7 +117,7 @@ try {
     $stmt->execute();
     $stmt->close();
 
-    echo json_encode([
+    sendJSONResponse([
         'success' => true,
         'message' => 'Upload audio thành công',
         'media' => [
@@ -121,11 +133,11 @@ try {
 } catch (Exception $e) {
     // Xóa file nếu đã upload nhưng có lỗi
     if (isset($file_path) && file_exists($file_path)) {
-        unlink($file_path);
+        @unlink($file_path);
     }
 
     http_response_code(400);
-    echo json_encode([
+    sendJSONResponse([
         'success' => false,
         'message' => $e->getMessage()
     ]);
