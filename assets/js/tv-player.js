@@ -470,7 +470,7 @@
                 'onerror="this.src=\'' + basePath + 'assets/img/no-image.png\'">';
         } else if (content.type === 'video') {
             html = '<video ' +
-                'autoplay muted playsinline ' +
+                'autoplay playsinline ' +
                 'preload="auto" ' +
                 'webkit-playsinline ' +
                 'x-webkit-airplay="allow" ' +
@@ -601,12 +601,6 @@
             }
             lastCheckedTime = video.currentTime;
         }, 3000);
-        
-        // Crucial fix for Smart TVs: Force mute via JS to bypass autoplay block on first load
-        video.muted = true;
-        video.defaultMuted = true;
-        video.volume = 0;
-        video.setAttribute('muted', 'true');
         
         // Force load and play
         video.load();
