@@ -486,6 +486,9 @@
         // Setup video specific listeners if it's a video
         if (content.type === 'video') {
            setupVideoElement(slide.querySelector('video'), filePath);
+        } else {
+           // Clear video element reference if transitioning to an image
+           state.currentVideoElement = null;
         }
         
         return slide;
