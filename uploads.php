@@ -36,7 +36,7 @@ include 'includes/sidebar.php';
                         Chọn file
                     </button>
                     <p class="file-types">
-                        Định dạng: JPG, PNG, GIF, MP4, WEBM (Không giới hạn dung lượng)
+                        Định dạng: JPG, PNG, GIF, MP4, WEBM (Tối đa 200MB)
                     </p>
                 </div>
                 <input type="file" id="fileInput" multiple accept="image/*,video/*">
