@@ -395,86 +395,158 @@
         // so that the screen doesn't freeze prematurely.
     }
 
+    // ============================================
+    // BLOB CACHING SYSTEM (Zero-Stutter Playback)
+    // ============================================
+    var videoBlobCache = {};
+    var downloadingUrls = {};
+
+    function getPreloadedVideoUrl(url, progressCallback, completeCallback) {
+        if (videoBlobCache[url]) {
+            if (progressCallback) progressCallback(100);
+            completeCallback(videoBlobCache[url]);
+            return;
+        }
+        
+        if (downloadingUrls[url]) {
+            downloadingUrls[url].callbacks.push(completeCallback);
+            downloadingUrls[url].progress.push(progressCallback);
+            return;
+        }
+        
+        console.log('[TV Player] Starting full blob download for:', url);
+        downloadingUrls[url] = { callbacks: [completeCallback], progress: [progressCallback] };
+        
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.responseType = 'blob';
+        
+        xhr.onprogress = function(e) {
+            if (e.lengthComputable) {
+                var percent = Math.round((e.loaded / e.total) * 100);
+                var progs = downloadingUrls[url] ? downloadingUrls[url].progress : [];
+                for (var i = 0; i < progs.length; i++) {
+                    if (progs[i]) progs[i](percent);
+                }
+            }
+        };
+        
+        xhr.onload = function() {
+            var cbs = downloadingUrls[url] ? downloadingUrls[url].callbacks : [];
+            var progs = downloadingUrls[url] ? downloadingUrls[url].progress : [];
+            delete downloadingUrls[url];
+            
+            if (this.status === 200) {
+                var blobUrl = URL.createObjectURL(this.response);
+                videoBlobCache[url] = blobUrl;
+                console.log('[TV Player] Download complete, cached as Blob.');
+                
+                for (var i = 0; i < progs.length; i++) {
+                    if (progs[i]) progs[i](100);
+                }
+                for (var i = 0; i < cbs.length; i++) {
+                    if (cbs[i]) cbs[i](blobUrl);
+                }
+            } else {
+                console.error('[TV Player] Download failed, falling back to streaming:', this.status);
+                for (var i = 0; i < cbs.length; i++) {
+                    if (cbs[i]) cbs[i](url);
+                }
+            }
+        };
+        
+        xhr.onerror = function() {
+            console.error('[TV Player] Download network error, falling back to streaming');
+            var cbs = downloadingUrls[url] ? downloadingUrls[url].callbacks : [];
+            delete downloadingUrls[url];
+            for (var i = 0; i < cbs.length; i++) {
+                if (cbs[i]) cbs[i](url);
+            }
+        };
+        
+        xhr.send();
+    }
+
     // Perform the visual transition with preloading to prevent stutter
     function performTransition(content, callback) {
         var container = document.getElementById('content-display');
         if (!container) return;
 
-        // Create new slide element
-        var newSlide = createSlideElement(content);
-        container.appendChild(newSlide);
-        
         var oldSlides = container.querySelectorAll('.slide-item.active');
         
-        // Function to actually start the visual fade
-        var startFade = function() {
-            // Force reflow
-            void newSlide.offsetWidth;
-            
-            // Activate new slide (fade in)
-            newSlide.classList.add('active');
-            
-            // Wait for transition to complete
-            setTimeout(function() {
-                // Remove old slides
-                for (var i = 0; i < oldSlides.length; i++) {
-                    if (oldSlides[i] !== newSlide) {
-                        oldSlides[i].classList.remove('active');
-                        
-                        // Pause any video in the old slide now that it's hidden
-                        var oldVideo = oldSlides[i].querySelector('video');
-                        if (oldVideo) oldVideo.pause();
-                        
-                        // Give it a moment to fade out
-                        (function(node) {
-                            setTimeout(function() {
-                                if (node && node.parentNode) {
-                                    node.parentNode.removeChild(node);
-                                }
-                            }, CONFIG.FADE_DURATION + 100); 
-                        })(oldSlides[i]);
+        var newSlide = createSlideElement(content, function(readySlide) {
+            // Function to actually start the visual fade
+            var startFade = function() {
+                // Force reflow
+                void readySlide.offsetWidth;
+                
+                // Activate new slide (fade in)
+                readySlide.classList.add('active');
+                
+                // Wait for transition to complete
+                setTimeout(function() {
+                    // Remove old slides
+                    for (var i = 0; i < oldSlides.length; i++) {
+                        if (oldSlides[i] !== readySlide) {
+                            oldSlides[i].classList.remove('active');
+                            
+                            // Pause any video in the old slide now that it's hidden
+                            var oldVideo = oldSlides[i].querySelector('video');
+                            if (oldVideo) oldVideo.pause();
+                            
+                            // Give it a moment to fade out
+                            (function(node) {
+                                setTimeout(function() {
+                                    if (node && node.parentNode) {
+                                        node.parentNode.removeChild(node);
+                                    }
+                                }, CONFIG.FADE_DURATION + 100); 
+                            })(oldSlides[i]);
+                        }
                     }
-                }
-                
-                // Callback done
-                if (callback) callback();
-                
-            }, CONFIG.FADE_DURATION); // Wait for fade duration
-        };
+                    
+                    // Callback done
+                    if (callback) callback();
+                    
+                }, CONFIG.FADE_DURATION); // Wait for fade duration
+            };
 
-        // Preload before fading
-        if (content.type === 'video') {
-            var videoElement = newSlide.querySelector('video');
-            if (videoElement) {
-                // Fallback in case 'canplay' never fires
-                var fallbackTimer = setTimeout(startFade, 3000);
-                
-                videoElement.addEventListener('canplay', function onCanPlay() {
-                    videoElement.removeEventListener('canplay', onCanPlay);
-                    clearTimeout(fallbackTimer);
+            // Preload before fading
+            if (content.type === 'video') {
+                var videoElement = readySlide.querySelector('video');
+                if (videoElement) {
+                    // Fallback in case 'canplay' never fires
+                    var fallbackTimer = setTimeout(startFade, 3000);
+                    
+                    videoElement.addEventListener('canplay', function onCanPlay() {
+                        videoElement.removeEventListener('canplay', onCanPlay);
+                        clearTimeout(fallbackTimer);
+                        startFade();
+                    });
+                } else {
                     startFade();
-                });
+                }
+            } else if (content.type === 'image') {
+                var imgElement = readySlide.querySelector('img');
+                if (imgElement) {
+                    var fallbackTimerImg = setTimeout(startFade, 1500);
+                    imgElement.onload = function() {
+                        clearTimeout(fallbackTimerImg);
+                        startFade();
+                    };
+                } else {
+                    startFade();
+                }
             } else {
                 startFade();
             }
-        } else if (content.type === 'image') {
-            var imgElement = newSlide.querySelector('img');
-            if (imgElement) {
-                var fallbackTimerImg = setTimeout(startFade, 1500);
-                imgElement.onload = function() {
-                    clearTimeout(fallbackTimerImg);
-                    startFade();
-                };
-            } else {
-                startFade();
-            }
-        } else {
-            startFade();
-        }
+        });
+        
+        container.appendChild(newSlide);
     }
 
-    // Create a slide DOM element
-    function createSlideElement(content) {
+    // Create a slide DOM element asynchronously
+    function createSlideElement(content, onReady) {
         var slide = document.createElement('div');
         slide.className = 'slide-item';
         
@@ -486,7 +558,6 @@
             filePath = basePath + filePath;
         }
 
-        var html = '';
         if (content.type === 'image') {
             // Only apply Ken Burns if > 1 image. If 1/1, use specific static scaling.
             if (state.contentList && state.contentList.length > 1) {
@@ -499,29 +570,35 @@
                 slide.classList.add('static-display');
             }
             
-            html = '<img src="' + filePath + '" alt="' + escapeHtml(content.name) + '" ' +
+            slide.innerHTML = '<img src="' + filePath + '" alt="' + escapeHtml(content.name) + '" ' +
                 'onerror="this.src=\'' + basePath + 'assets/img/no-image.png\'">';
+                
+            state.currentVideoElement = null;
+            if (onReady) onReady(slide);
+            
         } else if (content.type === 'video') {
-            html = '<video ' +
-                'autoplay playsinline ' +
-                'preload="auto" ' +
-                'webkit-playsinline ' +
-                'x-webkit-airplay="allow" ' +
-                'crossorigin="anonymous">' +
-                '<source src="' + filePath + '" type="video/mp4; codecs=avc1.42E01E,mp4a.40.2">' +
-                '<source src="' + filePath + '" type="video/mp4">' +
-                'Your browser does not support the video tag.' +
-                '</video>';
-        }
-        
-        slide.innerHTML = html;
-        
-        // Setup video specific listeners if it's a video
-        if (content.type === 'video') {
-           setupVideoElement(slide.querySelector('video'), filePath);
-        } else {
-           // Clear video element reference if transitioning to an image
-           state.currentVideoElement = null;
+            getPreloadedVideoUrl(filePath, function(percent) {
+                var loader = document.getElementById('initial-loader');
+                if (loader) {
+                    loader.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tải dữ liệu (' + percent + '%)...';
+                }
+            }, function(blobUrl) {
+                var html = '<video ' +
+                    'autoplay playsinline ' +
+                    'preload="auto" ' +
+                    'webkit-playsinline ' +
+                    'x-webkit-airplay="allow" ' +
+                    'crossorigin="anonymous">' +
+                    '<source src="' + blobUrl + '" type="video/mp4; codecs=avc1.42E01E,mp4a.40.2">' +
+                    '<source src="' + blobUrl + '" type="video/mp4">' +
+                    'Your browser does not support the video tag.' +
+                    '</video>';
+                
+                slide.innerHTML = html;
+                setupVideoElement(slide.querySelector('video'), blobUrl);
+                
+                if (onReady) onReady(slide);
+            });
         }
         
         return slide;
@@ -543,9 +620,20 @@
         display.innerHTML = '';
         display.classList.remove('mode-contain');
         
+        // Create initial loader
+        var loader = document.createElement('div');
+        loader.id = 'initial-loader';
+        loader.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:white;font-size:24px;z-index:100;background:rgba(0,0,0,0.8);padding:20px 40px;border-radius:12px;text-align:center;font-family:sans-serif;box-shadow:0 10px 30px rgba(0,0,0,0.5);';
+        loader.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tải dữ liệu...';
+        display.appendChild(loader);
+        
         // Create and append slide
-        var slide = createSlideElement(content);
-        slide.classList.add('active'); // Instant show for first item
+        var slide = createSlideElement(content, function(readySlide) {
+            var loaderEl = document.getElementById('initial-loader');
+            if (loaderEl) loaderEl.remove();
+            
+            readySlide.classList.add('active'); // Instant show for first item
+        });
         display.appendChild(slide);
     }
     
