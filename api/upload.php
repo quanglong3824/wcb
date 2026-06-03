@@ -123,9 +123,25 @@ $stmt->bind_param(
 if ($stmt->execute()) {
     $mediaId = $stmt->insert_id;
 
-    // Tự động tạo thumbnail cho video nếu FFmpeg có sẵn
+    // Tự động tối ưu hóa video MP4 (Web Optimized - faststart) để phát mượt mà trên trình duyệt
     $thumbnailPath = null;
     if ($fileType === 'video') {
+        // Tối ưu video cho web (di chuyển moov atom lên đầu để video có thể play ngay lập tức mà không cần tải hết)
+        if (strtolower(pathinfo($uniqueFileName, PATHINFO_EXTENSION)) === 'mp4' && !empty($ffmpegPath) && file_exists($ffmpegPath)) {
+            $optimizedPath = $uploadPath . 'opt_' . $uniqueFileName;
+            $optCommand = sprintf(
+                '%s -y -i %s -c copy -movflags +faststart %s 2>&1',
+                escapeshellcmd($ffmpegPath),
+                escapeshellarg($videoPath),
+                escapeshellarg($optimizedPath)
+            );
+            exec($optCommand, $optOutput, $optReturnCode);
+            if ($optReturnCode === 0 && file_exists($optimizedPath)) {
+                // Thay thế file gốc bằng file đã tối ưu
+                rename($optimizedPath, $videoPath);
+            }
+        }
+
         $thumbnailPath = generateVideoThumbnail($uploadPath, $uniqueFileName);
         if ($thumbnailPath) {
             // Cập nhật thumbnail_path trong database

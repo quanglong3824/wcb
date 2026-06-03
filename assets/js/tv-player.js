@@ -1418,11 +1418,16 @@
             if (video && video.duration > 0 && !isNaN(video.duration)) {
                 var timeRemaining = video.duration - video.currentTime;
                 
-                // Trigger reload when video has threshold seconds remaining
+                // Trigger reload when video is near the end
+                // Fix for short videos: Ensure video has played at least half its duration OR duration is > threshold
                 if (timeRemaining > 0 && timeRemaining <= state.autoReloadThreshold) {
-                    console.log('[TV Player] Smart auto reload triggered - video has', timeRemaining.toFixed(2), 'seconds remaining');
-                    clearInterval(checkInterval);
-                    reloadRootPage();
+                    var isShortVideo = video.duration <= state.autoReloadThreshold;
+                    // For short videos, only reload in the last 1 second
+                    if (!isShortVideo || timeRemaining <= 1) {
+                        console.log('[TV Player] Smart auto reload triggered - video has', timeRemaining.toFixed(2), 'seconds remaining');
+                        clearInterval(checkInterval);
+                        reloadRootPage();
+                    }
                 }
             }
         }, 2000);
