@@ -391,14 +391,11 @@
             countdown.parentNode.removeChild(countdown);
         }
         
-        // Stop any playing video in current slide to save resources
-        var currentActive = document.querySelector('.slide-item.active video');
-        if (currentActive) {
-            currentActive.pause();
-        }
+        // We DO NOT pause the video here anymore. We wait until the transition is complete
+        // so that the screen doesn't freeze prematurely.
     }
 
-    // Perform the visual transition
+    // Perform the visual transition with preloading to prevent stutter
     function performTransition(content, callback) {
         var container = document.getElementById('content-display');
         if (!container) return;
@@ -407,37 +404,73 @@
         var newSlide = createSlideElement(content);
         container.appendChild(newSlide);
         
-        // Force reflow
-        void newSlide.offsetWidth;
-        
-        // Activate new slide (fade in)
-        newSlide.classList.add('active');
-        
-        // Find old slide
         var oldSlides = container.querySelectorAll('.slide-item.active');
         
-        // Wait for transition to complete
-        setTimeout(function() {
-            // Remove old slides
-            for (var i = 0; i < oldSlides.length; i++) {
-                if (oldSlides[i] !== newSlide) {
-                    oldSlides[i].classList.remove('active');
-                    // Give it a moment to fade out if we were doing cross-fade via CSS
-                    // Then remove from DOM
-                    (function(node) {
-                        setTimeout(function() {
-                            if (node && node.parentNode) {
-                                node.parentNode.removeChild(node);
-                            }
-                        }, CONFIG.FADE_DURATION + 100); 
-                    })(oldSlides[i]);
+        // Function to actually start the visual fade
+        var startFade = function() {
+            // Force reflow
+            void newSlide.offsetWidth;
+            
+            // Activate new slide (fade in)
+            newSlide.classList.add('active');
+            
+            // Wait for transition to complete
+            setTimeout(function() {
+                // Remove old slides
+                for (var i = 0; i < oldSlides.length; i++) {
+                    if (oldSlides[i] !== newSlide) {
+                        oldSlides[i].classList.remove('active');
+                        
+                        // Pause any video in the old slide now that it's hidden
+                        var oldVideo = oldSlides[i].querySelector('video');
+                        if (oldVideo) oldVideo.pause();
+                        
+                        // Give it a moment to fade out
+                        (function(node) {
+                            setTimeout(function() {
+                                if (node && node.parentNode) {
+                                    node.parentNode.removeChild(node);
+                                }
+                            }, CONFIG.FADE_DURATION + 100); 
+                        })(oldSlides[i]);
+                    }
                 }
+                
+                // Callback done
+                if (callback) callback();
+                
+            }, CONFIG.FADE_DURATION); // Wait for fade duration
+        };
+
+        // Preload before fading
+        if (content.type === 'video') {
+            var videoElement = newSlide.querySelector('video');
+            if (videoElement) {
+                // Fallback in case 'canplay' never fires
+                var fallbackTimer = setTimeout(startFade, 3000);
+                
+                videoElement.addEventListener('canplay', function onCanPlay() {
+                    videoElement.removeEventListener('canplay', onCanPlay);
+                    clearTimeout(fallbackTimer);
+                    startFade();
+                });
+            } else {
+                startFade();
             }
-            
-            // Callback done
-            if (callback) callback();
-            
-        }, CONFIG.FADE_DURATION); // Wait for fade duration
+        } else if (content.type === 'image') {
+            var imgElement = newSlide.querySelector('img');
+            if (imgElement) {
+                var fallbackTimerImg = setTimeout(startFade, 1500);
+                imgElement.onload = function() {
+                    clearTimeout(fallbackTimerImg);
+                    startFade();
+                };
+            } else {
+                startFade();
+            }
+        } else {
+            startFade();
+        }
     }
 
     // Create a slide DOM element
