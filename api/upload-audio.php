@@ -47,6 +47,11 @@ try {
     if ($file['error'] !== UPLOAD_ERR_OK) {
         throw new Exception('Lỗi khi upload file: ' . $file['error']);
     }
+    
+    // Check size limit (200MB)
+    if ($file['size'] > 200 * 1024 * 1024) {
+        throw new Exception('Dung lượng audio vượt quá giới hạn cho phép (200MB)');
+    }
 
 
 

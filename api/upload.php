@@ -43,6 +43,12 @@ if ($file['error'] !== UPLOAD_ERR_OK) {
     sendJSONResponse(['success' => false, 'message' => 'Lỗi upload file: ' . $file['error']]);
 }
 
+// Validate file size (200MB limit)
+$maxSize = 200 * 1024 * 1024; // 200MB in bytes
+if ($file['size'] > $maxSize) {
+    sendJSONResponse(['success' => false, 'message' => 'Dung lượng file vượt quá giới hạn cho phép (200MB)']);
+}
+
 
 // Determine file type
 $mimeType = $file['type'];

@@ -82,9 +82,12 @@ function showUploadConfirmModal(files) {
     
     files.forEach(file => {
         const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm', 'video/avi', 'video/mov', 'video/quicktime'];
+        const maxSize = 200 * 1024 * 1024; // 200MB
         
         if (!validTypes.includes(file.type)) {
             invalidFiles.push({ file, reason: 'Định dạng không hỗ trợ' });
+        } else if (file.size > maxSize) {
+            invalidFiles.push({ file, reason: 'Vượt quá giới hạn 200MB' });
         } else {
             validFiles.push(file);
         }

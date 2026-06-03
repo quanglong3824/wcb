@@ -60,6 +60,15 @@ try {
                 ];
                 continue;
             }
+            
+            // Check size limit (200MB)
+            if ($files['size'][$i] > 200 * 1024 * 1024) {
+                $errors[] = [
+                    'file' => $files['name'][$i],
+                    'error' => 'Vượt quá giới hạn 200MB'
+                ];
+                continue;
+            }
 
             $fileName = $files['name'][$i];
             $fileType = $files['type'][$i];
