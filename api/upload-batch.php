@@ -6,6 +6,8 @@ ini_set('display_errors', 0);
 // Start output buffering
 ob_start();
 
+set_time_limit(300);
+
 try {
     require_once '../includes/auth-check.php';
     require_once '../config/php/config.php';

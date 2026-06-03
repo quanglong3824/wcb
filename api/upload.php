@@ -6,6 +6,8 @@ ini_set('display_errors', 0);
 // Start output buffering
 ob_start();
 
+set_time_limit(300);
+
 require_once '../includes/auth-check.php';
 require_once '../config/php/config.php';
 require_once '../includes/logger.php';
@@ -185,7 +187,7 @@ function generateVideoThumbnail($videoPath, $videoFileName)
 
     // Tạo thumbnail tại giây thứ 1
     $command = sprintf(
-        '%s -i %s -ss 00:00:01 -vframes 1 -vf "scale=640:-1" -q:v 2 %s 2>&1',
+        '%s -y -nostdin -i %s -ss 00:00:01 -vframes 1 -vf "scale=640:-1" -q:v 2 %s 2>&1',
         escapeshellcmd($ffmpegPath),
         escapeshellarg($videoPath),
         escapeshellarg($thumbnailFullPath)

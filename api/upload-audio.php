@@ -28,8 +28,8 @@ function sendJSONResponse($data) {
 // Cấu hình upload
 $upload_dir = '../uploads/';
 $allowed_audio_types = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a', 'audio/aac'];
-$max_file_size = 50 * 1024 * 1024; // 50MB
 
+set_time_limit(300);
 try {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         throw new Exception('Method not allowed');

@@ -76,7 +76,7 @@ include 'includes/sidebar.php';
     </div>
 </main>
 
-<script src="assets/js/uploads.js"></script>
+<script src="assets/js/uploads.js?v=2"></script>
 
 <?php
 include 'includes/footer.php';

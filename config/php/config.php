@@ -35,7 +35,7 @@ define('APP_VERSION', '1.1.3');
 define('HOTEL_NAME', 'Aurora Hotel Plaza');
 
 // Upload Settings
-define('MAX_FILE_SIZE', 50 * 1024 * 1024); // 50MB
+define('MAX_FILE_SIZE', 5000 * 1024 * 1024); // 5000MB (5GB)
 define('ALLOWED_IMAGE_TYPES', ['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
 define('ALLOWED_VIDEO_TYPES', ['video/mp4', 'video/webm', 'video/ogg']);
 
