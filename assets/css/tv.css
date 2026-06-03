@@ -564,14 +564,34 @@
     transform: scale(1.02);
 }
 
-.tv-preview-large img {
+/* Multi-Grid Layouts */
+.tv-preview-large.multi-grid {
+    display: grid;
+    gap: 2px;
+    background: #000;
+}
+.tv-preview-large.multi-grid.grid-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+.tv-preview-large.multi-grid.grid-2 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
+.tv-preview-large.multi-grid.grid-3 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+.tv-preview-large.multi-grid.grid-3 .grid-item:first-child { grid-row: 1 / 3; }
+.tv-preview-large.multi-grid.grid-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+
+.grid-item {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--gray-800);
+}
+
+.grid-item img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     transition: all 0.4s ease;
 }
 
-.tv-preview-large:hover img {
+.tv-preview-large:hover .grid-item img {
     opacity: 0.9;
     transform: scale(1.05);
 }
@@ -589,13 +609,12 @@
 }
 
 .video-preview-large i {
-    font-size: 4rem;
+    font-size: 3rem;
     opacity: 0.9;
 }
 
 .video-preview-large span {
-    font-size: 1.125rem;
-    font-weight: 600;
+    display: none; /* Hide text in grid mode */
 }
 
 /* Video Thumbnail in TV Card */
@@ -605,15 +624,15 @@
     object-fit: cover;
 }
 
-.tv-preview-large .video-badge {
+.grid-item .video-badge {
     position: absolute;
-    top: 12px;
-    left: 12px;
+    top: 8px;
+    left: 8px;
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     color: white;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
     font-weight: 600;
     display: flex;
     align-items: center;
@@ -622,8 +641,21 @@
     z-index: 5;
 }
 
-.tv-preview-large .video-badge i {
-    font-size: 0.8rem;
+.grid-item .video-badge i {
+    font-size: 0.7rem;
+}
+
+.more-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 700;
+    z-index: 10;
 }
 
 .tv-preview-large.empty {

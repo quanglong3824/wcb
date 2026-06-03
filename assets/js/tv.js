@@ -104,42 +104,57 @@ function createTVCard(tv) {
     let previewHTML = '';
     
     if (tv.assigned_media && tv.assigned_media.length > 0) {
-        // Show first assigned media (default or first one)
-        const firstMedia = tv.assigned_media[0];
         const mediaCount = tv.assigned_media.length;
+        let gridClass = 'grid-1';
+        if (mediaCount === 2) gridClass = 'grid-2';
+        else if (mediaCount === 3) gridClass = 'grid-3';
+        else if (mediaCount >= 4) gridClass = 'grid-4';
+
+        let gridHTML = '';
+        const maxDisplay = Math.min(mediaCount, 4);
         
-        previewHTML = `
-            <div class="tv-preview-large" onclick="showTVMediaModal(${tv.id})">
-                ${firstMedia.type === 'image' ? `
-                    <img src="${escapeHtml(firstMedia.file_path)}" alt="${escapeHtml(firstMedia.name)}" 
-                         onerror="this.src='assets/img/no-image.png'">
-                ` : `
-                    ${firstMedia.thumbnail_path ? `
-                        <img src="${escapeHtml(firstMedia.thumbnail_path)}" alt="${escapeHtml(firstMedia.name)}" 
-                             class="video-thumbnail"
-                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        for (let i = 0; i < maxDisplay; i++) {
+            const media = tv.assigned_media[i];
+            let innerHTML = '';
+            
+            if (media.type === 'image') {
+                innerHTML = `<img src="${escapeHtml(media.file_path)}" alt="${escapeHtml(media.name)}" onerror="this.src='assets/img/no-image.png'">`;
+            } else {
+                if (media.thumbnail_path) {
+                    innerHTML = `
+                        <img src="${escapeHtml(media.thumbnail_path)}" alt="${escapeHtml(media.name)}" class="video-thumbnail" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                         <div class="video-preview-large" style="display:none;">
                             <i class="fas fa-play-circle"></i>
-                            <span>Video</span>
                         </div>
-                    ` : `
+                    `;
+                } else {
+                    innerHTML = `
                         <div class="video-preview-large">
                             <i class="fas fa-play-circle"></i>
-                            <span>Video</span>
                         </div>
-                    `}
-                    <div class="video-badge"><i class="fas fa-video"></i> Video</div>
-                `}
+                    `;
+                }
+                innerHTML += `<div class="video-badge"><i class="fas fa-video"></i></div>`;
+            }
+            
+            // Add +N overlay on the 4th item if there are more than 4 items
+            if (i === 3 && mediaCount > 4) {
+                innerHTML += `<div class="more-overlay">+${mediaCount - 4}</div>`;
+            }
+            
+            gridHTML += `<div class="grid-item">${innerHTML}</div>`;
+        }
+
+        const previewName = mediaCount > 1 ? escapeHtml(tv.assigned_media[0].name) + ' và ' + (mediaCount - 1) + ' WCB khác' : escapeHtml(tv.assigned_media[0].name);
+
+        previewHTML = `
+            <div class="tv-preview-large multi-grid ${gridClass}" onclick="showTVMediaModal(${tv.id})">
+                ${gridHTML}
                 <div class="preview-overlay">
                     <div class="preview-info">
-                        <span class="preview-name">${escapeHtml(firstMedia.name)}</span>
-                        ${firstMedia.is_default ? '<span class="preview-badge">Mặc định</span>' : ''}
+                        <span class="preview-name">${previewName}</span>
+                        ${tv.assigned_media[0].is_default ? '<span class="preview-badge">Mặc định</span>' : ''}
                     </div>
-                    ${mediaCount > 1 ? `
-                        <div class="preview-count">
-                            <i class="fas fa-images"></i> +${mediaCount - 1} WCB khác
-                        </div>
-                    ` : ''}
                 </div>
             </div>
         `;
