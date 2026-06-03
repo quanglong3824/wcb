@@ -765,8 +765,8 @@ function openOrchidMode() {
                                 <h4><i class="fas fa-image"></i> Chọn WCB để gán:</h4>
                                 <div class="wcb-selection-grid">
                                     ${wcbs.filter(w => w.status === 'active').map(wcb => `
-                                        <label class="wcb-radio">
-                                            <input type="radio" name="orchid-wcb" value="${wcb.id}" class="wcb-radio-input">
+                                        <label class="wcb-checkbox">
+                                            <input type="checkbox" name="orchid-wcb" value="${wcb.id}" class="wcb-select">
                                             <div class="wcb-select-item">
                                                 <div class="wcb-select-preview">
                                                     ${wcb.type === 'image' ? `
@@ -821,16 +821,15 @@ function closeOrchidModal() {
 
 // Confirm Orchid Mode
 function confirmOrchidMode() {
-    const selectedWCB = document.querySelector('input[name="orchid-wcb"]:checked');
+    const selectedWCBs = Array.from(document.querySelectorAll('input[name="orchid-wcb"]:checked'))
+        .map(cb => parseInt(cb.value));
     
-    if (!selectedWCB) {
-        alert('Vui lòng chọn 1 WCB!');
+    if (selectedWCBs.length === 0) {
+        alert('Vui lòng chọn ít nhất 1 WCB!');
         return;
     }
     
-    const mediaId = parseInt(selectedWCB.value);
-    
-    if (!confirm('Bạn có chắc muốn áp dụng chế độ Orchid?\n\nWCB này sẽ được gán cho 6 TV (trừ Restaurant).')) {
+    if (!confirm('Bạn có chắc muốn áp dụng chế độ Orchid với ' + selectedWCBs.length + ' nội dung đã chọn?\n\nCác WCB này sẽ được gán cho 6 TV (trừ Restaurant).')) {
         return;
     }
     
@@ -847,7 +846,7 @@ function confirmOrchidMode() {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            media_id: mediaId
+            media_ids: selectedWCBs
         })
     })
     .then(response => response.json())
@@ -1415,8 +1414,8 @@ function openVideoBroadcastMode() {
                                 <h4><i class="fas fa-photo-video"></i> Chọn nội dung để phát:</h4>
                                 <div class="video-selection-grid">
                                     ${activeMedia.length > 0 ? activeMedia.map(media => `
-                                        <label class="video-radio">
-                                            <input type="radio" name="broadcast-media" value="${media.id}" class="video-radio-input">
+                                        <label class="wcb-checkbox">
+                                            <input type="checkbox" name="broadcast-media" value="${media.id}" class="wcb-select">
                                             <div class="video-select-item">
                                                 <div class="video-select-preview">
                                                     ${getMediaPreviewHTML(media)}
@@ -1525,19 +1524,19 @@ function toggleRestaurantSelection(checkbox) {
 
 // Confirm Video Broadcast
 function confirmVideoBroadcast() {
-    const selectedMedia = document.querySelector('input[name="broadcast-media"]:checked');
+    const selectedMedia = Array.from(document.querySelectorAll('input[name="broadcast-media"]:checked'))
+        .map(cb => parseInt(cb.value));
     
-    if (!selectedMedia) {
-        alert('Vui lòng chọn 1 video hoặc hình ảnh!');
+    if (selectedMedia.length === 0) {
+        alert('Vui lòng chọn ít nhất 1 nội dung để phát!');
         return;
     }
     
-    const mediaId = parseInt(selectedMedia.value);
     const includeRestaurant = document.getElementById('vb-include-restaurant')?.checked || false;
     
     const confirmMsg = includeRestaurant 
-        ? 'Bạn có chắc muốn phát nội dung này trên TẤT CẢ TV (bao gồm Restaurant)?'
-        : 'Bạn có chắc muốn phát nội dung này trên tất cả TV (trừ Restaurant)?';
+        ? 'Bạn có chắc muốn phát ' + selectedMedia.length + ' nội dung này trên TẤT CẢ TV (bao gồm Restaurant)?'
+        : 'Bạn có chắc muốn phát ' + selectedMedia.length + ' nội dung này trên tất cả TV (trừ Restaurant)?';
     
     if (!confirm(confirmMsg + '\n\nTất cả TV sẽ được bật và hiển thị nội dung đã chọn.')) {
         return;
@@ -1558,7 +1557,7 @@ function confirmVideoBroadcast() {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            media_id: mediaId,
+            media_ids: selectedMedia,
             exclude_restaurant: !includeRestaurant
         })
     })
