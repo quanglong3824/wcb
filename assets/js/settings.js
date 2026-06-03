@@ -111,6 +111,12 @@ function populateSettings(grouped) {
         if (autoReload.auto_reload_threshold) {
             document.getElementById('autoReloadThreshold').value = autoReload.auto_reload_threshold;
         }
+        if (autoReload.simple_reload_enabled !== undefined) {
+            document.getElementById('simpleReloadEnabled').checked = autoReload.simple_reload_enabled === '1' || autoReload.simple_reload_enabled === true;
+        }
+        if (autoReload.simple_reload_interval) {
+            document.getElementById('simpleReloadInterval').value = autoReload.simple_reload_interval;
+        }
     }
     
     // Notification settings
@@ -194,7 +200,9 @@ function saveDisplaySettings(event) {
         auto_reload_enabled: formData.get('autoReloadEnabled') === 'on' ? '1' : '0',
         auto_reload_mode: formData.get('autoReloadMode'),
         auto_reload_interval: formData.get('autoReloadInterval'),
-        auto_reload_threshold: formData.get('autoReloadThreshold')
+        auto_reload_threshold: formData.get('autoReloadThreshold'),
+        simple_reload_enabled: formData.get('simpleReloadEnabled') === 'on' ? '1' : '0',
+        simple_reload_interval: formData.get('simpleReloadInterval')
     };
     
     fetch('api/settings.php', {

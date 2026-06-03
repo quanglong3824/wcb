@@ -64,15 +64,7 @@ try {
             $fileTmpName = $files['tmp_name'][$i];
             $fileSize = $files['size'][$i];
 
-            // Validate file size (50MB)
-            $maxSize = 50 * 1024 * 1024;
-            if ($fileSize > $maxSize) {
-                $errors[] = [
-                    'file' => $fileName,
-                    'error' => 'File quá lớn (tối đa 50MB)'
-                ];
-                continue;
-            }
+
 
             // Determine media type
             $mediaType = '';

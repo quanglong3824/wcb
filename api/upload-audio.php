@@ -1,11 +1,15 @@
-<?php
-/**
- * API Upload Audio
- * Upload file nhạc nền cho slideshow
- */
+// Disable error output to prevent breaking JSON
+error_reporting(0);
+ini_set('display_errors', 0);
+
+// Start output buffering
+ob_start();
 
 require_once '../config/php/config.php';
 require_once '../includes/auth-check-api.php';
+
+// Clear any output
+ob_clean();
 
 header('Content-Type: application/json');
 
@@ -32,10 +36,7 @@ try {
         throw new Exception('Lỗi khi upload file: ' . $file['error']);
     }
 
-    // Kiểm tra kích thước file
-    if ($file['size'] > $max_file_size) {
-        throw new Exception('File quá lớn. Kích thước tối đa: ' . ($max_file_size / 1024 / 1024) . 'MB');
-    }
+
 
     // Kiểm tra loại file
     $finfo = finfo_open(FILEINFO_MIME_TYPE);

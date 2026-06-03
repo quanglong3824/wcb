@@ -81,12 +81,9 @@ function showUploadConfirmModal(files) {
     const invalidFiles = [];
     
     files.forEach(file => {
-        const maxSize = 50 * 1024 * 1024;
         const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm', 'video/avi', 'video/mov', 'video/quicktime'];
         
-        if (file.size > maxSize) {
-            invalidFiles.push({ file, reason: 'Quá lớn (tối đa 50MB)' });
-        } else if (!validTypes.includes(file.type)) {
+        if (!validTypes.includes(file.type)) {
             invalidFiles.push({ file, reason: 'Định dạng không hỗ trợ' });
         } else {
             validFiles.push(file);
@@ -426,13 +423,6 @@ function processBatchUpload() {
 
 // Upload single file
 function uploadFile(file) {
-    // Validate file size (50MB)
-    const maxSize = 50 * 1024 * 1024;
-    if (file.size > maxSize) {
-        showMessage('File "' + file.name + '" quá lớn (tối đa 50MB)', 'error');
-        return;
-    }
-    
     // Validate file type
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm', 'video/avi', 'video/mov', 'video/quicktime'];
     if (!validTypes.includes(file.type)) {

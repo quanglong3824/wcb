@@ -156,6 +156,25 @@ include 'includes/sidebar.php';
                     </div>
                     
                     <div class="settings-group">
+                        <h3>Tải lại trang đơn giản (Simple Auto Page Reload)</h3>
+                        
+                        <div class="toggle-label">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="simpleReloadEnabled" name="simpleReloadEnabled">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span>Bật tự động reload trang đơn giản (Dành cho TV cũ)</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Thời gian reload (giây)</label>
+                            <input type="number" id="simpleReloadInterval" name="simpleReloadInterval" 
+                                   value="102" min="10" max="3600">
+                            <small>Tự động tải lại trang trình chiếu sau mỗi X giây (mặc định 102 giây - 1 phút 42 giây)</small>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-group">
                         <h3>Hiệu ứng chuyển cảnh</h3>
                         
                         <div class="form-group">

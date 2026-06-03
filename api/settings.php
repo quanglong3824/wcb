@@ -37,6 +37,26 @@ $conn->close();
  */
 function getSettings($conn)
 {
+    // Auto-initialize missing settings (self-healing)
+    $defaultSettings = [
+        'simple_reload_enabled' => ['value' => '1', 'group' => 'auto_reload', 'description' => 'Bật tự động reload trang đơn giản (TV cũ)'],
+        'simple_reload_interval' => ['value' => '102', 'group' => 'auto_reload', 'description' => 'Thời gian reload trang đơn giản (giây)']
+    ];
+
+    foreach ($defaultSettings as $key => $data) {
+        $checkStmt = $conn->prepare("SELECT id FROM system_settings WHERE setting_key = ?");
+        $checkStmt->bind_param("s", $key);
+        $checkStmt->execute();
+        $res = $checkStmt->get_result();
+        if ($res->num_rows === 0) {
+            $insertStmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value, setting_group, description, setting_type) VALUES (?, ?, ?, ?, 'string')");
+            $insertStmt->bind_param("ssss", $key, $data['value'], $data['group'], $data['description']);
+            $insertStmt->execute();
+            $insertStmt->close();
+        }
+        $checkStmt->close();
+    }
+
     $group = isset($_GET['group']) ? trim($_GET['group']) : '';
 
     $query = "SELECT setting_key, setting_value, setting_group, description FROM system_settings";

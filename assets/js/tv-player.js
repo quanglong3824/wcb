@@ -138,14 +138,6 @@
 
             // Setup content refresh
             state.contentRefreshTimer = setInterval(loadContent, CONFIG.CONTENT_REFRESH);
-            
-            // ============================================
-            // SIMPLE AUTO PAGE RELOAD - Fixed timer
-            // Video 1:36 + buffer = 1:40 (100 seconds)
-            // This ensures video loops properly on old TVs
-            // where 'ended' event doesn't fire correctly
-            // ============================================
-            startSimpleAutoPageReload();
         });
 
         // Add meta refresh as fallback
@@ -1336,22 +1328,39 @@
                         state.autoReloadInterval = parseInt(settings.auto_reload_interval || 120, 10);
                         state.autoReloadThreshold = parseInt(settings.auto_reload_threshold || 10, 10);
                         
+                        // Parse simple reload settings
+                        state.simpleReloadEnabled = settings.simple_reload_enabled === undefined ? true : (settings.simple_reload_enabled === '1' || settings.simple_reload_enabled === 'true' || settings.simple_reload_enabled === true);
+                        state.simpleReloadInterval = parseInt(settings.simple_reload_interval || 102, 10);
+
                         console.log('[TV Player] Auto reload settings loaded:', {
                             enabled: state.autoReloadEnabled,
                             mode: state.autoReloadMode,
                             interval: state.autoReloadInterval,
-                            threshold: state.autoReloadThreshold
+                            threshold: state.autoReloadThreshold,
+                            simpleReloadEnabled: state.simpleReloadEnabled,
+                            simpleReloadInterval: state.simpleReloadInterval
                         });
                         
                         // Start auto reload if enabled
                         if (state.autoReloadEnabled) {
                             startAutoReload();
                         }
+
+                        // Start simple reload if enabled
+                        if (state.simpleReloadEnabled) {
+                            startSimpleAutoPageReload();
+                        }
                     }
                 } catch (e) {
                     console.error('[TV Player] Error loading auto reload settings:', e);
+                    startSimpleAutoPageReload();
                 }
             }
+        };
+
+        xhr.onerror = function () {
+            console.error('[TV Player] Network error loading auto reload settings');
+            startSimpleAutoPageReload();
         };
 
         xhr.send();
@@ -1482,7 +1491,7 @@
     
     /**
      * Start simple auto page reload
-     * Reloads page after CONFIG.AUTO_PAGE_RELOAD_SECONDS (100s = 1m40s)
+     * Reloads page after state.simpleReloadInterval or CONFIG.AUTO_PAGE_RELOAD_SECONDS
      * This ensures video loops properly regardless of browser events
      */
     function startSimpleAutoPageReload() {
@@ -1492,8 +1501,9 @@
             state.autoPageReloadTimer = null;
         }
         
-        var delayMs = CONFIG.AUTO_PAGE_RELOAD_SECONDS * 1000;
-        var delayDisplay = CONFIG.AUTO_PAGE_RELOAD_SECONDS;
+        var interval = state.simpleReloadInterval !== undefined ? state.simpleReloadInterval : CONFIG.AUTO_PAGE_RELOAD_SECONDS;
+        var delayMs = interval * 1000;
+        var delayDisplay = interval;
         
         console.log('[TV Player] === SIMPLE AUTO PAGE RELOAD ===' );
         console.log('[TV Player] Page will auto-reload in', delayDisplay, 'seconds (' + Math.floor(delayDisplay/60) + 'm' + (delayDisplay%60) + 's)');

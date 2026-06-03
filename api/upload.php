@@ -1,7 +1,17 @@
 <?php
+// Disable error output to prevent breaking JSON
+error_reporting(0);
+ini_set('display_errors', 0);
+
+// Start output buffering
+ob_start();
+
 require_once '../includes/auth-check.php';
 require_once '../config/php/config.php';
 require_once '../includes/logger.php';
+
+// Clear any output
+ob_clean();
 
 header('Content-Type: application/json');
 
@@ -21,12 +31,6 @@ if ($file['error'] !== UPLOAD_ERR_OK) {
     exit;
 }
 
-// Validate file size (50MB)
-$maxSize = 50 * 1024 * 1024;
-if ($file['size'] > $maxSize) {
-    echo json_encode(['success' => false, 'message' => 'File quá lớn (tối đa 50MB)']);
-    exit;
-}
 
 // Determine file type
 $mimeType = $file['type'];
