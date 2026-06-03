@@ -599,6 +599,12 @@
             lastCheckedTime = video.currentTime;
         }, 3000);
         
+        // Crucial fix for Smart TVs: Force mute via JS to bypass autoplay block on first load
+        video.muted = true;
+        video.defaultMuted = true;
+        video.volume = 0;
+        video.setAttribute('muted', 'true');
+        
         // Force load and play
         video.load();
         
@@ -638,6 +644,18 @@
             playAttempts = 0;
             attemptPlay();
         });
+        
+        // Autoplay unlocker: Any key press (TV remote) or click will force play if blocked
+        var unlockAutoplay = function() {
+            if (video && video.paused && !state.isTransitioning) {
+                console.log('[TV Player] User interaction detected, forcing play to unlock autoplay policies');
+                video.play().catch(function(e){});
+            }
+            // Optional: we can remove the listeners after first interaction, but keeping them is harmless and helps if it gets stuck again
+        };
+        document.addEventListener('keydown', unlockAutoplay, { once: true });
+        document.addEventListener('click', unlockAutoplay, { once: true });
+        document.addEventListener('touchstart', unlockAutoplay, { once: true });
         
         state.currentVideoElement = video;
         startVideoProgressReporter();
