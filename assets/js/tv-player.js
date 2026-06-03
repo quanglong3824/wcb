@@ -302,14 +302,30 @@
 
         // If multiple contents, start rotation
         if (state.contentList.length > 1) {
-            state.slideTimer = setInterval(nextSlide, CONFIG.SLIDE_INTERVAL);
+            scheduleNextSlide();
         }
+    }
+
+    // Schedule next slide based on current content type
+    function scheduleNextSlide() {
+        if (state.slideTimer) {
+            clearTimeout(state.slideTimer);
+            state.slideTimer = null;
+        }
+        
+        var currentContent = state.contentList[state.currentIndex];
+        
+        // If it's an image, use the fixed interval
+        if (currentContent.type === 'image') {
+            state.slideTimer = setTimeout(nextSlide, CONFIG.SLIDE_INTERVAL);
+        }
+        // If it's a video, the transition is handled by the 'ended' event listener
     }
 
     // Stop slideshow
     function stopSlideshow() {
         if (state.slideTimer) {
-            clearInterval(state.slideTimer);
+            clearTimeout(state.slideTimer);
             state.slideTimer = null;
         }
         
@@ -354,6 +370,7 @@
         performTransition(nextContent, function() {
             state.currentIndex = nextIndex;
             state.isTransitioning = false;
+            scheduleNextSlide();
         });
     }
 
@@ -529,7 +546,10 @@
         video.addEventListener('ended', function() {
             state.videoHasEnded = true;
             console.log('[TV Player] Video ended.');
-            // Note: Simple Auto Page Reload handles the actual reload/loop logic if needed
+            // If multiple items, go to next slide immediately
+            if (state.contentList && state.contentList.length > 1) {
+                nextSlide();
+            }
         });
         
         // Handle video pause - Resume if not at end
@@ -581,11 +601,18 @@
         
         // Force load and play
         video.load();
-        video.loop = false;
+        
+        // Loop seamlessly if this is the ONLY item in the playlist
+        if (state.contentList && state.contentList.length === 1) {
+            video.loop = true;
+            console.log('[TV Player] Single item in playlist - Native looping enabled');
+        } else {
+            video.loop = false;
+        }
         
         // Robust play attempt
         var playAttempts = 0;
-        var maxAttempts = 3;
+        var maxAttempts = 5;
         
         function attemptPlay() {
             playAttempts++;
@@ -603,6 +630,14 @@
         }
         
         setTimeout(attemptPlay, 500);
+
+        // Crucial fix: If video takes a long time to load, play it when it's finally ready
+        video.addEventListener('canplay', function() {
+            console.log('[TV Player] Video canplay event fired, attempting play...');
+            // Reset attempts if it finally loaded
+            playAttempts = 0;
+            attemptPlay();
+        });
         
         state.currentVideoElement = video;
         startVideoProgressReporter();
