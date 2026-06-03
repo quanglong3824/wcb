@@ -1530,41 +1530,18 @@
     // ============================================
     
     /**
-     * Start simple auto page reload
-     * Reloads page after state.simpleReloadInterval or CONFIG.AUTO_PAGE_RELOAD_SECONDS
-     * This ensures video loops properly regardless of browser events
+     * Start dynamic media time indicator
+     * Shows the remaining time of the current video
      */
     function startSimpleAutoPageReload() {
         // Clear any existing timer
         if (state.autoPageReloadTimer) {
-            clearTimeout(state.autoPageReloadTimer);
+            clearInterval(state.autoPageReloadTimer);
             state.autoPageReloadTimer = null;
         }
         
-        var interval = state.simpleReloadInterval !== undefined ? state.simpleReloadInterval : CONFIG.AUTO_PAGE_RELOAD_SECONDS;
-        var delayMs = interval * 1000;
-        var delayDisplay = interval;
+        console.log('[TV Player] Starting dynamic time indicator');
         
-        console.log('[TV Player] === SIMPLE AUTO PAGE RELOAD ===' );
-        console.log('[TV Player] Page will auto-reload in', delayDisplay, 'seconds (' + Math.floor(delayDisplay/60) + 'm' + (delayDisplay%60) + 's)');
-        console.log('[TV Player] Timer started at:', new Date().toLocaleTimeString());
-        
-        // Show discreet timer indicator (bottom-left corner)
-        showAutoReloadIndicator(delayDisplay);
-        
-        // Set timer to reload page
-        state.autoPageReloadTimer = setTimeout(function() {
-            console.log('[TV Player] Auto page reload triggered!');
-            
-            // Reload current page (not root)
-            window.location.reload(true);
-        }, delayMs);
-    }
-    
-    /**
-     * Show discreet auto-reload indicator with countdown
-     */
-    function showAutoReloadIndicator(totalSeconds) {
         // Remove existing indicator
         var existing = document.getElementById('auto-reload-indicator');
         if (existing) existing.remove();
@@ -1573,29 +1550,29 @@
         var indicator = document.createElement('div');
         indicator.id = 'auto-reload-indicator';
         indicator.style.cssText = 'position:fixed;bottom:10px;left:10px;background:rgba(0,0,0,0.5);color:#fff;padding:5px 10px;border-radius:15px;font-size:11px;z-index:9999;opacity:0.6;font-family:monospace;';
-        
-        var secondsLeft = totalSeconds;
-        
-        function updateIndicator() {
-            var mins = Math.floor(secondsLeft / 60);
-            var secs = secondsLeft % 60;
-            indicator.innerHTML = '↻ ' + mins + ':' + (secs < 10 ? '0' : '') + secs;
-        }
-        
-        updateIndicator();
         document.body.appendChild(indicator);
         
-        // Update countdown every second
-        var countdownInterval = setInterval(function() {
-            secondsLeft--;
-            if (secondsLeft <= 0) {
-                clearInterval(countdownInterval);
-                indicator.innerHTML = '↻ Reloading...';
-                indicator.style.background = 'rgba(212, 175, 55, 0.8)';
+        // Update countdown every 500ms based on video time
+        state.autoPageReloadTimer = setInterval(function() {
+            var video = state.currentVideoElement;
+            if (video && video.duration > 0 && !isNaN(video.duration)) {
+                var secondsLeft = Math.max(0, Math.ceil(video.duration - video.currentTime));
+                var mins = Math.floor(secondsLeft / 60);
+                var secs = secondsLeft % 60;
+                indicator.innerHTML = '↻ ' + mins + ':' + (secs < 10 ? '0' : '') + secs;
+                indicator.style.display = 'block';
             } else {
-                updateIndicator();
+                // If it's an image, hide or show slide remaining time
+                // For simplicity, just hide it when not playing video
+                indicator.style.display = 'none';
             }
-        }, 1000);
+        }, 500);
+    }
+    
+    // We can leave showAutoReloadIndicator empty or just remove it since it's merged above, 
+    // but to avoid undefined errors if it's called elsewhere, we keep a dummy function
+    function showAutoReloadIndicator(totalSeconds) {
+        // Deprecated: logic merged into startSimpleAutoPageReload
     }
 
     // Start when DOM ready
