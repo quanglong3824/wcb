@@ -1569,17 +1569,25 @@
         
         // Update countdown every 500ms based on video time
         state.autoPageReloadTimer = setInterval(function() {
+            var totalItems = state.contentList ? state.contentList.length : 0;
+            var currentItem = (state.currentIndex !== undefined) ? (state.currentIndex + 1) : 0;
+            var countText = (totalItems > 1) ? ' • ' + currentItem + '/' + totalItems : '';
+            
             var video = state.currentVideoElement;
             if (video && video.duration > 0 && !isNaN(video.duration)) {
                 var secondsLeft = Math.max(0, Math.ceil(video.duration - video.currentTime));
                 var mins = Math.floor(secondsLeft / 60);
                 var secs = secondsLeft % 60;
-                indicator.innerHTML = '↻ ' + mins + ':' + (secs < 10 ? '0' : '') + secs;
+                indicator.innerHTML = '↻ ' + mins + ':' + (secs < 10 ? '0' : '') + secs + countText;
                 indicator.style.display = 'block';
             } else {
-                // If it's an image, hide or show slide remaining time
-                // For simplicity, just hide it when not playing video
-                indicator.style.display = 'none';
+                // If it's an image, show only the count if there are multiple items
+                if (totalItems > 1) {
+                    indicator.innerHTML = '📸 ' + countText.replace(' • ', '');
+                    indicator.style.display = 'block';
+                } else {
+                    indicator.style.display = 'none';
+                }
             }
         }, 500);
     }
