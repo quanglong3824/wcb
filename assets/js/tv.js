@@ -129,8 +129,9 @@ function createTVCard(tv) {
                     `;
                 } else {
                     innerHTML = `
-                        <div class="video-preview-large">
-                            <i class="fas fa-play-circle"></i>
+                        <video src="${escapeHtml(media.file_path)}#t=0.1" preload="metadata" muted playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+                        <div style="position: absolute; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.2); pointer-events: none;">
+                            <i class="fas fa-play-circle" style="font-size: 3rem; color: rgba(255,255,255,0.8); text-shadow: 0 2px 10px rgba(0,0,0,0.5);"></i>
                         </div>
                     `;
                 }
